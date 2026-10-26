@@ -139,6 +139,35 @@
 .chapter-entry__tag{font-size:12px;letter-spacing:.12em;color:#ffd49c;font-weight:800}
 .chapter-next{max-width:560px;margin:18px auto 4px;text-align:left}
 .chapter-guild .parchment{background:linear-gradient(100deg,rgba(88,104,72,.14) 0%,transparent 8%,transparent 93%,rgba(60,78,52,.10) 100%),linear-gradient(160deg,#f3efd2,#e2dcb1 100%);border-color:#8e8a55}
+
+/* v4.2.1: the stamp is THE submit action — big, high contrast, under the sentence, clear disabled state. */
+.stamp-cta{display:flex;align-items:center;gap:16px;width:100%;margin:20px 0 4px;padding:14px 20px;border-radius:14px;border:3px solid #6b2030;background:linear-gradient(180deg,#c94a58 0%,#9a2b3c 100%);color:#fff6e0;box-shadow:0 6px 0 #5a1a26,0 14px 26px rgba(90,26,38,.35);cursor:pointer;font:inherit;text-align:left;transition:transform .1s,box-shadow .1s,filter .15s;position:relative}
+.stamp-cta:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 8px 0 #5a1a26,0 18px 30px rgba(90,26,38,.4)}
+.stamp-cta:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #5a1a26,0 6px 12px rgba(90,26,38,.3)}
+.stamp-cta:focus-visible{outline:4px solid #f0c060;outline-offset:3px}
+.stamp-cta__seal{flex:none;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe7a6,#d9a441 60%,#a8701f);color:#6b2030;font:900 26px 'Noto Serif TC','PMingLiU',serif;border:3px double #7a4a12;box-shadow:0 3px 6px rgba(0,0,0,.3);transform:rotate(-8deg)}
+.stamp-cta__text{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.stamp-cta__kicker{font-size:12px;letter-spacing:.14em;font-weight:800;color:#ffd9a0}
+.stamp-cta__main{font-size:clamp(22px,2.6vw,28px);line-height:1.2;letter-spacing:.08em}
+.stamp-cta__sub{font-size:12px;color:#ffe8d0;line-height:1.5;overflow-wrap:anywhere}
+.stamp-cta__key{flex:none;padding:5px 9px;border-radius:6px;border:1px solid rgba(255,230,200,.7);background:rgba(255,255,255,.14);font:700 12px ui-monospace,monospace;color:#fff6e0}
+.stamp-cta--ready::after{content:'';position:absolute;inset:-7px;border-radius:18px;border:3px solid rgba(214,74,90,.55);animation:stampPulse 1.6s ease-out infinite;pointer-events:none}
+@keyframes stampPulse{0%{opacity:.9;transform:scale(.98)}100%{opacity:0;transform:scale(1.04)}}
+.stamp-cta:disabled{cursor:not-allowed;background:#f1e4c6;border:2px dashed #b99a6e;color:#7d6450;box-shadow:none}
+.stamp-cta:disabled .stamp-cta__seal{background:#e2d3b2;color:#a48c70;border-color:#b99a6e;box-shadow:none}
+.stamp-cta:disabled .stamp-cta__kicker{color:#9b7a5d}
+.stamp-cta:disabled .stamp-cta__sub{color:#8a6f58}
+.chapter-guild .stamp-cta:not(:disabled){background:linear-gradient(180deg,#3f7a5a 0%,#25553d 100%);border-color:#1d4430;box-shadow:0 6px 0 #173726,0 14px 26px rgba(23,55,38,.35)}
+.chapter-guild .stamp-cta--ready::after{border-color:rgba(63,122,90,.55)}
+@media (max-width:860px){
+  .stamp-cta{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:20;width:auto;margin:0;padding:10px 14px;gap:12px;box-shadow:0 6px 0 #5a1a26,0 12px 30px rgba(0,0,0,.5)}
+  .stamp-cta:disabled{box-shadow:0 10px 26px rgba(0,0,0,.45)}
+  .stamp-cta__seal{width:44px;height:44px;font-size:21px}
+  .stamp-cta__main{font-size:21px}
+  .stamp-cta__key{display:none}
+  .game-page{padding-bottom:128px}
+}
+@media (prefers-reduced-motion:reduce){.stamp-cta--ready::after{animation:none;opacity:.6}.stamp-cta{transition:none}}
 </style>
 </head>
 <body>
@@ -1101,11 +1130,16 @@ function makeChronicle(game){
     if(!chains.length)return '';
     return `<section class="chain-reaction" aria-label="連鎖反應"><span class="chain-reaction__label">${U().chain}</span>${chains.map(c=>`<div class="chain-reaction__item"><h4>${escapeHtml(c.title)}</h4><p>${escapeHtml(c.judgment)}</p></div>`).join('')}</section>`;
   }
+  /* The one "submit" action: big, high-contrast, placed right under the player's sentence. */
+  function stampButton(preview,position) {
+    const u=U(),ready=position!==null;
+    return `<button type="button" class="stamp-cta ${ready?'stamp-cta--ready':''}" data-action="judge" ${ready?'':'disabled'} aria-describedby="stamp-hint"><span class="stamp-cta__seal" aria-hidden="true">印</span><span class="stamp-cta__text"><small class="stamp-cta__kicker">${ready?'最後一步・確定送出':'還不能送出'}</small><strong class="stamp-cta__main">${ready?'蓋章送出':u.stampEmpty}</strong><small class="stamp-cta__sub" id="stamp-hint">${ready?`${u.stamp}，執行「${escapeHtml(preview)}」・不可反悔`:'先在上方原文點一個位置，按鈕就會亮起'}</small></span>${ready?'<kbd class="stamp-cta__key" aria-hidden="true">Enter</kbd>':''}</button>`;
+  }
   function gameplay() {
     const level=getCurrentLevel(state,DATA()),u=U(),n=state.round+1;
     const position=state.selectedPosition;
     const preview=position===null?u.previewEmpty:insertMark(level.raw,position,state.selectedMark??'，');
-    return `<main class="game-page chapter-${state.chapter}">${statusHud()}<div class="game-layout"><section class="parchment"><div class="parchment__top"><span class="scroll-tag">${u.tag(n)}</span><span>${u.date(n)}</span></div><div class="royal-insignia">${CH().insignia}</div><p class="scroll-kicker">${u.kicker} · ${String(n).padStart(2,'0')}</p><h2 class="stage-title">${escapeHtml(level.title)}</h2><p class="stage-context">${escapeHtml(level.context)}</p>${briefingCard(level)}<div class="decree-box"><div class="decree-caption">${u.caption}</div>${markPicker()}${sentenceSlots(level)}<div class="decree-instruction">${u.instruction}</div><div class="punctuation-preview" aria-live="polite"><span>你的標點版本</span><strong>${escapeHtml(preview)}</strong></div><div class="comma-nav"><button type="button" data-action="shift" data-offset="-1" ${position===null||position===0?'disabled':''}>◀ 向左移一格</button><button type="button" data-action="clear" ${position===null?'disabled':''}>${u.clear}</button><button type="button" data-action="shift" data-offset="1" ${position===null||position===Array.from(level.raw).length?'disabled':''}>向右移一格 ▶</button></div></div><div class="scroll-footer"><span>${u.footerL}</span><span>${u.footerR}</span></div></section><aside class="mission-panel"><div class="mission-head"><span class="section-eyebrow">READ THE CONSEQUENCES</span><h3>猜猜看，哪種解讀更糟？</h3><p>${u.missionP}</p></div><div class="mission-card"><div class="mission-card__badge">盲判混亂 · 沒有標準答案提示</div><p>${u.missionCard}</p><small>在兩種可執行解讀中，選到<b>較混亂的結果 +180 分</b>，選到<b>較安穩的結果 +65 分</b>。風險與劇情都在蓋章後才揭曉。</small></div><div class="risk-card"><span>唯一確定的行政風險</span><strong>${u.chaosWord} ${state.chaos} / ${state.settings.chaosLoseAt}</strong><small>${u.riskSmall(state.settings.invalidChaosPenalty)}</small></div><button class="btn btn--stamp" data-action="judge" ${position===null?'disabled':''}><span class="wax-mini">✦</span><span>${u.stamp} <small>${position===null?u.stampEmpty:`${escapeHtml(preview)}・不得反悔`}</small></span></button><div class="aside-note"><b>${u.asideTitle}</b><p>${u.asideP}</p></div><div class="keyboard-help">${u.keys}</div></aside></div></main>`;
+    return `<main class="game-page chapter-${state.chapter}">${statusHud()}<div class="game-layout"><section class="parchment"><div class="parchment__top"><span class="scroll-tag">${u.tag(n)}</span><span>${u.date(n)}</span></div><div class="royal-insignia">${CH().insignia}</div><p class="scroll-kicker">${u.kicker} · ${String(n).padStart(2,'0')}</p><h2 class="stage-title">${escapeHtml(level.title)}</h2><p class="stage-context">${escapeHtml(level.context)}</p>${briefingCard(level)}<div class="decree-box"><div class="decree-caption">${u.caption}</div>${markPicker()}${sentenceSlots(level)}<div class="decree-instruction">${u.instruction}</div><div class="punctuation-preview" aria-live="polite"><span>你的標點版本</span><strong>${escapeHtml(preview)}</strong></div><div class="comma-nav"><button type="button" data-action="shift" data-offset="-1" ${position===null||position===0?'disabled':''}>◀ 向左移一格</button><button type="button" data-action="clear" ${position===null?'disabled':''}>${u.clear}</button><button type="button" data-action="shift" data-offset="1" ${position===null||position===Array.from(level.raw).length?'disabled':''}>向右移一格 ▶</button></div>${stampButton(preview,position)}</div><div class="scroll-footer"><span>${u.footerL}</span><span>${u.footerR}</span></div></section><aside class="mission-panel"><div class="mission-head"><span class="section-eyebrow">READ THE CONSEQUENCES</span><h3>猜猜看，哪種解讀更糟？</h3><p>${u.missionP}</p></div><div class="mission-card"><div class="mission-card__badge">盲判混亂 · 沒有標準答案提示</div><p>${u.missionCard}</p><small>在兩種可執行解讀中，選到<b>較混亂的結果 +180 分</b>，選到<b>較安穩的結果 +65 分</b>。風險與劇情都在蓋章後才揭曉。</small></div><div class="risk-card"><span>唯一確定的行政風險</span><strong>${u.chaosWord} ${state.chaos} / ${state.settings.chaosLoseAt}</strong><small>${u.riskSmall(state.settings.invalidChaosPenalty)}</small></div><div class="aside-note"><b>${u.asideTitle}</b><p>${u.asideP}</p></div><div class="keyboard-help">${u.keys}</div></aside></div></main>`;
   }
   function judgment() {
     const entry=state.history.at(-1),terminal=state.endingReason,invalid=!entry.valid,u=U();
