@@ -18,6 +18,10 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
   let musicOff = pref.musicOff === true; // Musical loop enabled by default
   let best = Number(pref.best || 0);
   let bestGuild = Number(pref.bestGuild || 0);
+  let demoPos = null;
+  // First-time coaching (once per chapter, per browser).
+  let tutorial = {royal: pref.tutorialRoyal === true, guild: pref.tutorialGuild === true};
+  let coachJudgment = false;
   let lastSeed = String(pref.lastSeed || 'ROYAL-001');
   let seedDraft = lastSeed;
   let stageViewKey = '';
@@ -31,7 +35,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
   const flourish = '<div class="flourish" aria-hidden="true"><span>✦</span><i></i><span>✧</span><i></i><span>✦</span></div>';
 
   function persist() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({best, bestGuild, lastSeed, mute, musicOff, musicVolume})); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({best, bestGuild, lastSeed, mute, musicOff, musicVolume, tutorialRoyal: tutorial.royal, tutorialGuild: tutorial.guild})); } catch {}
   }
   function randomSeed() {
     if (globalThis.crypto?.getRandomValues) {
@@ -243,15 +247,24 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
   const DATA = () => CH().data;
   const U = () => CH().ui;
   const MARK_NAMES = {'，':'逗號','？':'問號'};
+  /* Menu: teach the one mechanic on the first screen with a sentence that is NOT in the game. */
+  const DEMO={raw:'貓不抓老鼠抓狗',readings:{3:'貓不出手，結果老鼠跑去抓狗。',5:'貓放過老鼠，改去抓狗。'}};
+  function demoCard() {
+    const chars=Array.from(DEMO.raw),pos=demoPos;
+    const slot=i=>`<button type="button" class="demo-slot ${pos===i?'demo-slot--on':''}" data-action="demo" data-demo="${i}" aria-label="示範：在第 ${i} 字後放逗號" aria-pressed="${pos===i}">${pos===i?'，':'·'}</button>`;
+    const text=pos===null?DEMO.raw:insertMark(DEMO.raw,pos,'，');
+    const meaning=pos===null?'點一下字與字之間的「·」試試看。'
+      :DEMO.readings[pos]?`✔ 讀得通：${DEMO.readings[pos]}`:'✘ 這樣放，句子還是有兩種讀法，沒人知道該照哪個做——在遊戲裡會被退件，混亂 +1。';
+    return `<section class="howto" aria-label="怎麼玩"><div class="howto__demo"><span class="howto__label">試玩一句（不在正式關卡裡）</span><div class="demo-sentence">${slot(0)}${chars.map((ch,i)=>`<span class="demo-glyph">${ch}</span>${slot(i+1)}`).join('')}</div><p class="demo-result ${pos===null?'':DEMO.readings[pos]?'demo-result--ok':'demo-result--bad'}" aria-live="polite"><b>${escapeHtml(text)}</b><span>${meaning}</span></p></div><ol class="howto__steps"><li><b>放一個逗號</b>每份聖旨都少一個逗號，點字與字之間的「·」放下去。只有兩個位置讀得通。</li><li><b>蓋章送出</b>按下「蓋章送出」，命令就照你的標點執行，不能反悔。</li><li><b>越亂越高分</b>兩種讀法裡，更混亂的 +180 分、較安穩的 +65 分；混亂到 7，王國就倒了。</li></ol></section>`;
+  }
   function menu() {
-    return `<main class="menu-page"><div class="menu-hero"><div class="eyebrow"><span class="diamond">◆</span> 第一章 · 國王的遺囑只有一個逗號 <span class="diamond">◆</span></div>
-      <div class="hero-crown">${crown}</div>
+    return `<main class="menu-page"><div class="menu-hero menu-hero--compact"><div class="eyebrow"><span class="diamond">◆</span> 第一章 · 國王的遺囑只有一個逗號 <span class="diamond">◆</span></div>
       <h1>這個標點符號<br/><em>誰放的？</em></h1>
-      <p class="menu-subtitle">你有一個逗號，和讓王國滅亡的權力。</p>
-      ${flourish}
-      <p class="story-lede">國王身體健康，卻預立了八份沒有標點的遺囑。<br/>依宮廷規定，遺囑必須「生前試行」，以免死後出錯。<br/>沒有人告訴你哪種解讀才算正確。<br/>選擇能造成更大混亂的版本，可以獲得高分——前提是王國還存在。</p>
+      <p class="menu-subtitle">同一句話，逗號放的位置不同，意思就完全不同。你負責放逗號，王國負責承擔後果。</p>
+      ${demoCard()}
+      <div class="menu-cta"><button class="btn btn--primary btn--huge" data-action="start">開始遊戲：第一章 <span>›</span></button><div class="menu-cta__seed"><label for="seed-input">王國代碼（選填，同代碼同關卡順序）</label><div class="seed-input-row"><input id="seed-input" class="seed-input" type="text" maxlength="42" value="${escapeHtml(seedDraft)}" autocomplete="off" spellcheck="false" aria-label="王國種子代碼"/><button class="btn btn--ghost btn--square" data-action="random-seed" title="產生新代碼" aria-label="產生隨機種子">↻</button></div></div></div>
     </div>
-    <div class="menu-options"><div class="menu-options__main"><div class="section-eyebrow">THE FIRST DECREE</div><h2>今日，就職。</h2><label for="seed-input" class="field-label">你的王國代碼 <span>（同一代碼對應相同關卡順序）</span></label><div class="seed-input-row"><input id="seed-input" class="seed-input" type="text" maxlength="42" value="${escapeHtml(seedDraft)}" autocomplete="off" spellcheck="false" aria-label="王國種子代碼"/><button class="btn btn--ghost btn--square" data-action="random-seed" title="產生新代碼" aria-label="產生隨機種子">↻</button></div><button class="btn btn--primary btn--huge" data-action="start">開始閱讀・接受荒謬考績 <span>›</span></button><div class="menu-quick"><button data-action="daily" class="text-button">◈ 今日王國挑戰</button><button data-action="help" class="text-button">玩法與規則</button></div>
+    <div class="menu-options"><div class="menu-options__main"><div class="section-eyebrow">THE STORY</div><h2>今日，就職。</h2><p class="story-lede story-lede--card">國王身體健康，卻預立了八份沒有標點的遺囑。依宮廷規定，遺囑必須「生前試行」，以免死後出錯。你是皇家文書局的書記官，負責替每一份遺囑補上一個逗號——沒有人告訴你哪種解讀才算正確。</p><div class="menu-quick"><button data-action="daily" class="text-button">◈ 今日王國挑戰</button><button data-action="help" class="text-button">完整規則</button></div>
       <div class="chapter-entry"><span class="chapter-entry__tag">第二章 · 會長的合約少了一個符號</span><p>書記官被借調到金幣商會。這一章每份合約可以選擇放<b>逗號</b>或<b>問號</b>，但只能放一個。通關第一章後可帶著前情接續；也可以直接開始。</p><button class="btn btn--ghost" data-action="guild-start">直接開始第二章（無前情）›</button>${bestGuild?`<small>本機第二章最高業績 ${bestGuild.toLocaleString('zh-TW')} 分</small>`:''}</div></div>
     <aside class="menu-options__aside"><div class="rule-label">皇家文書局招聘須知</div><div class="rule-item"><span class="rule-icon">，</span><div><strong>一關一個逗號</strong><p>不可更動聖旨上的任何字。</p></div></div><div class="rule-item"><span class="rule-icon">♜</span><div><strong>沒有委託，也沒有答案</strong><p>從語意猜哪種命令會更混亂，只有能執行的解讀才推進劇情。</p></div></div><div class="rule-item"><span class="rule-icon">⚖</span><div><strong>引發混亂才能刷高分</strong><p>較危險的解讀 +180 分；較安穩的 +65 分。錯誤標點混亂 +1 並退件。</p></div></div><div class="warning-strip"><strong>⚠ 國王生前最後的提醒</strong><p>王國混亂達 <b>7</b>，王國就會崩潰並立即結束遊戲。逗號放錯位置也會增加混亂；想得高分，得先讓王國活到第八關！</p></div><div class="personal-best">${best ? `<span>本機最高政績</span><b>${best.toLocaleString('zh-TW')} 分</b>` : '<span>本機尚無通關紀錄</span><b>等待第一位書記官</b>'}</div></aside></div></main>`;
   }
@@ -269,7 +282,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
   function sentenceSlots(level) {
     const chars=Array.from(level.raw),selected=state.selectedPosition,mark=state.selectedMark??'，',name=multiMark()?'符號':'逗號';
     const slot=(i)=>`<button type="button" class="comma-slot ${selected===i?'comma-slot--chosen':''}" data-action="select" data-position="${i}" aria-label="在第 ${i} 字後插入${multiMark()?MARK_NAMES[mark]:'逗號'}" aria-pressed="${selected===i}" title="把${name}放在這裡">${selected===i?mark:'·'}</button>`;
-    return `<div class="sentence" role="group" aria-label="任意選擇${name}位置">${slot(0)}${chars.map((ch,i)=>`<span class="glyph-pair"><span class="glyph">${escapeHtml(ch)}</span>${slot(i+1)}</span>`).join('')}</div>`;
+    return `<div class="sentence ${coaching()&&state.selectedPosition===null?'sentence--coach':''}" role="group" aria-label="任意選擇${name}位置">${slot(0)}${chars.map((ch,i)=>`<span class="glyph-pair"><span class="glyph">${escapeHtml(ch)}</span>${slot(i+1)}</span>`).join('')}</div>`;
   }
   function briefingCard(level) {
     const lines=courtBriefing(state.history,level.id,CH().world,state.prelude);
@@ -287,11 +300,20 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
     const u=U(),ready=position!==null;
     return `<button type="button" class="stamp-cta ${ready?'stamp-cta--ready':''}" data-action="judge" ${ready?'':'disabled'} aria-describedby="stamp-hint"><span class="stamp-cta__seal" aria-hidden="true">印</span><span class="stamp-cta__text"><small class="stamp-cta__kicker">${ready?'最後一步・確定送出':'還不能送出'}</small><strong class="stamp-cta__main">${ready?'蓋章送出':u.stampEmpty}</strong><small class="stamp-cta__sub" id="stamp-hint">${ready?`${u.stamp}，執行「${escapeHtml(preview)}」・不可反悔`:'先在上方原文點一個位置，按鈕就會亮起'}</small></span>${ready?'<kbd class="stamp-cta__key" aria-hidden="true">Enter</kbd>':''}</button>`;
   }
+  function coaching() {return state&&!tutorial[state.chapter]&&state.round===0&&state.history.length===0;}
+  function coachBubble() {
+    if(!coaching())return '';
+    const placed=state.selectedPosition!==null,guild=state.chapter==='guild';
+    const text=!placed
+      ? (guild?'<b>第一步</b>先選「逗號」或「問號」，再點字與字之間的任一個「·」。':'<b>第一步</b>點字與字之間的任一個「·」，把逗號放下去。')
+      : '<b>第二步</b>按下「蓋章送出」——按鈕上會寫出你要送出的句子。不滿意可以先點別的位置。';
+    return `<div class="coach ${placed?'coach--down':''}" role="note"><span class="coach__badge">第一次玩</span><p>${text}</p></div>`;
+  }
   function gameplay() {
     const level=getCurrentLevel(state,DATA()),u=U(),n=state.round+1;
     const position=state.selectedPosition;
     const preview=position===null?u.previewEmpty:insertMark(level.raw,position,state.selectedMark??'，');
-    return `<main class="game-page chapter-${state.chapter}">${statusHud()}<div class="game-layout"><section class="parchment"><div class="parchment__top"><span class="scroll-tag">${u.tag(n)}</span><span>${u.date(n)}</span></div><div class="royal-insignia">${CH().insignia}</div><p class="scroll-kicker">${u.kicker} · ${String(n).padStart(2,'0')}</p><h2 class="stage-title">${escapeHtml(level.title)}</h2><p class="stage-context">${escapeHtml(level.context)}</p>${briefingCard(level)}<div class="decree-box"><div class="decree-caption">${u.caption}</div>${markPicker()}${sentenceSlots(level)}<div class="decree-instruction">${u.instruction}</div><div class="punctuation-preview" aria-live="polite"><span>你的標點版本</span><strong>${escapeHtml(preview)}</strong></div><div class="comma-nav"><button type="button" data-action="shift" data-offset="-1" ${position===null||position===0?'disabled':''}>◀ 向左移一格</button><button type="button" data-action="clear" ${position===null?'disabled':''}>${u.clear}</button><button type="button" data-action="shift" data-offset="1" ${position===null||position===Array.from(level.raw).length?'disabled':''}>向右移一格 ▶</button></div>${stampButton(preview,position)}</div><div class="scroll-footer"><span>${u.footerL}</span><span>${u.footerR}</span></div></section><aside class="mission-panel"><div class="mission-head"><span class="section-eyebrow">READ THE CONSEQUENCES</span><h3>猜猜看，哪種解讀更糟？</h3><p>${u.missionP}</p></div><div class="mission-card"><div class="mission-card__badge">盲判混亂 · 沒有標準答案提示</div><p>${u.missionCard}</p><small>在兩種可執行解讀中，選到<b>較混亂的結果 +180 分</b>，選到<b>較安穩的結果 +65 分</b>。風險與劇情都在蓋章後才揭曉。</small></div><div class="risk-card"><span>唯一確定的行政風險</span><strong>${u.chaosWord} ${state.chaos} / ${state.settings.chaosLoseAt}</strong><small>${u.riskSmall(state.settings.invalidChaosPenalty)}</small></div><div class="aside-note"><b>${u.asideTitle}</b><p>${u.asideP}</p></div><div class="keyboard-help">${u.keys}</div></aside></div></main>`;
+    return `<main class="game-page chapter-${state.chapter}">${statusHud()}<div class="game-layout"><section class="parchment"><div class="parchment__top"><span class="scroll-tag">${u.tag(n)}</span><span>${u.date(n)}</span></div><div class="royal-insignia">${CH().insignia}</div><p class="scroll-kicker">${u.kicker} · ${String(n).padStart(2,'0')}</p><h2 class="stage-title">${escapeHtml(level.title)}</h2><p class="stage-context">${escapeHtml(level.context)}</p>${briefingCard(level)}<div class="decree-box"><div class="decree-caption">${u.caption}</div>${coachBubble()}${markPicker()}${sentenceSlots(level)}<div class="decree-instruction">${u.instruction}</div><div class="punctuation-preview" aria-live="polite"><span>你的標點版本</span><strong>${escapeHtml(preview)}</strong></div><div class="comma-nav"><button type="button" data-action="shift" data-offset="-1" ${position===null||position===0?'disabled':''}>◀ 向左移一格</button><button type="button" data-action="clear" ${position===null?'disabled':''}>${u.clear}</button><button type="button" data-action="shift" data-offset="1" ${position===null||position===Array.from(level.raw).length?'disabled':''}>向右移一格 ▶</button></div>${stampButton(preview,position)}</div><div class="scroll-footer"><span>${u.footerL}</span><span>${u.footerR}</span></div></section><aside class="mission-panel"><div class="mission-head"><span class="section-eyebrow">READ THE CONSEQUENCES</span><h3>猜猜看，哪種解讀更糟？</h3><p>${u.missionP}</p></div><div class="mission-card"><div class="mission-card__badge">盲判混亂 · 沒有標準答案提示</div><p>${u.missionCard}</p><small>在兩種可執行解讀中，選到<b>較混亂的結果 +180 分</b>，選到<b>較安穩的結果 +65 分</b>。風險與劇情都在蓋章後才揭曉。</small></div><div class="risk-card"><span>唯一確定的行政風險</span><strong>${u.chaosWord} ${state.chaos} / ${state.settings.chaosLoseAt}</strong><small>${u.riskSmall(state.settings.invalidChaosPenalty)}</small></div><div class="aside-note"><b>${u.asideTitle}</b><p>${u.asideP}</p></div><div class="keyboard-help">${u.keys}</div></aside></div></main>`;
   }
   function judgment() {
     const entry=state.history.at(-1),terminal=state.endingReason,invalid=!entry.valid,u=U();
@@ -299,7 +321,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
     const title=invalid?u.invalidTitle:entry.riskier?'你選中了更混亂的解讀！':u.safeTitle;
     const summary=invalid?u.invalidSummary:entry.riskier?'你在兩種合法解讀中，挑了危險係數較高的一種。':'你採取了兩種合法解讀中相對安穩的一種。';
     const retryStage=invalid&&!terminal;
-    return `<main class="judgment-page">${statusHud()}<div class="judgment-card ${invalid?'judgment-card--invalid':''}"><div class="stamp-graphic ${!invalid&&entry.riskier?'stamp-graphic--bad':'stamp-graphic--good'}" aria-hidden="true"><div class="stamp-inner">${stampText}</div></div><p class="scroll-kicker">${u.kickerJ} · ${entry.stageId}</p><h2>${title}</h2><p class="judgment-sub">${summary}</p><div class="judgment-quote">${escapeHtml(entry.punctuated)}</div><div class="meaning-box"><div class="field-label">${invalid?u.invalidMeaning:u.meaning}</div><strong>${escapeHtml(entry.meaning)}</strong></div><div class="story-banner"><span>${u.news}</span><h3>${escapeHtml(entry.headline)}</h3><p>${escapeHtml(entry.scene)}</p><p class="story-after">${escapeHtml(entry.afterword)}</p></div>${chainBlock(entry)}<div class="judgment-metrics">${metric(u.score,`+${entry.scoreEarned} 分`,invalid?'文件退件、不得分':entry.riskier?'高風險解讀獎勵':'穩健解讀基本分',entry.riskier?'bad':'good')}${metric(u.chaos,`${entry.chaosBefore} → ${entry.chaosAfter}`,getRiskText(entry.chaosDelta),entry.chaosDelta>0?'bad':'good')}${metric('本局考驗',invalid?'標點失誤':entry.riskier?'更混亂的解讀':'較安穩的解讀',invalid?'本關不會前進':'比較的是此關的兩種合法解讀')}</div>${terminal?`<div class="terminal-notice ${terminal==='victory'?'terminal-notice--good':''}">${terminal==='victory'?u.winNotice:u.loseNotice}</div>`:''}<button class="btn btn--primary btn--wide" data-action="advance">${terminal==='victory'?u.btnWin:terminal?u.btnLose:retryStage?u.btnRetry:u.btnNext(state.round+2)} <span>›</span></button></div></main>`;
+    return `<main class="judgment-page">${statusHud()}<div class="judgment-card ${invalid?'judgment-card--invalid':''}"><div class="stamp-graphic ${!invalid&&entry.riskier?'stamp-graphic--bad':'stamp-graphic--good'}" aria-hidden="true"><div class="stamp-inner">${stampText}</div></div><p class="scroll-kicker">${u.kickerJ} · ${entry.stageId}</p><h2>${title}</h2><p class="judgment-sub">${summary}</p>${coachJudgment?`<div class="coach coach--judgment" role="note"><span class="coach__badge">第一次玩</span><p>這就是你的命令造成的後果。看完之後，按最下方的按鈕繼續${invalid?'重寫這一份':'下一份'}。</p></div>`:''}<div class="judgment-quote">${escapeHtml(entry.punctuated)}</div><div class="meaning-box"><div class="field-label">${invalid?u.invalidMeaning:u.meaning}</div><strong>${escapeHtml(entry.meaning)}</strong></div><div class="story-banner"><span>${u.news}</span><h3>${escapeHtml(entry.headline)}</h3><p>${escapeHtml(entry.scene)}</p><p class="story-after">${escapeHtml(entry.afterword)}</p></div>${chainBlock(entry)}<div class="judgment-metrics">${metric(u.score,`+${entry.scoreEarned} 分`,invalid?'文件退件、不得分':entry.riskier?'高風險解讀獎勵':'穩健解讀基本分',entry.riskier?'bad':'good')}${metric(u.chaos,`${entry.chaosBefore} → ${entry.chaosAfter}`,getRiskText(entry.chaosDelta),entry.chaosDelta>0?'bad':'good')}${metric('本局考驗',invalid?'標點失誤':entry.riskier?'更混亂的解讀':'較安穩的解讀',invalid?'本關不會前進':'比較的是此關的兩種合法解讀')}</div>${terminal?`<div class="terminal-notice ${terminal==='victory'?'terminal-notice--good':''}">${terminal==='victory'?u.winNotice:u.loseNotice}</div>`:''}<button class="btn btn--primary btn--wide" data-action="advance">${terminal==='victory'?u.btnWin:terminal?u.btnLose:retryStage?u.btnRetry:u.btnNext(state.round+2)} <span>›</span></button></div></main>`;
   }
   function chronicleText(story) {
     return [story.title,story.opening,...story.acts.flatMap(a=>[a.title,a.text]),...story.connections.flatMap(c=>[c.title,c.text]),'尾聲',story.epilogue].join('\n\n');
@@ -342,6 +364,13 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
     if (resetScroll || key !== stageViewKey) window.scrollTo({top:0,behavior:'instant'});
     stageViewKey = key;
     restoreFocus(focus);
+  }
+  function stampNow() {
+    const wasCoaching=coaching();
+    state=judgeChoice(state,DATA());
+    if(wasCoaching){tutorial[state.chapter]=true;coachJudgment=true;persist();}
+    sound('stamp');if(!state.history.at(-1).valid)sound('confusion');render(true);
+    coachJudgment=false;
   }
   let toastTimeout;
   function toast(message) {
@@ -417,6 +446,10 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
       state=selectPosition(state,DATA(),Number(target.dataset.position));
       sound('choose');render();return;
     }
+    if(action==='demo' && !state){
+      const p=Number(target.dataset.demo);demoPos=demoPos===p?null:p;sound('choose');render();
+      root.querySelector(`[data-action="demo"][data-demo="${p}"]`)?.focus({preventScroll:true});return;
+    }
     if(action==='mark' && state?.phase==='editing'){
       state=selectMark(state,DATA(),target.dataset.mark);
       sound('choose');render();return;
@@ -428,8 +461,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
     if(action==='clear' && state?.phase==='editing'){state={...state,selectedPosition:null,selectedChoiceId:null};render();return;}
     if(action==='judge' && state?.phase==='editing'){
       if(state.selectedPosition===null){toast(multiMark()?'請先任意挑選符號位置':'請先任意挑選逗號位置');return;}
-      state=judgeChoice(state,DATA());
-      sound('stamp');if(!state.history.at(-1).valid)sound('confusion');render(true);return;
+      stampNow();return;
     }
     if(action==='advance' && state?.phase==='judgment'){
       state=advanceGame(state);sound(state.phase==='victory'?'win':state.phase==='defeat'?'fail':'start');render(true);return;
@@ -453,7 +485,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
       }
       const markKey={'1':'，',',':'，','，':'，','2':'？','?':'？','？':'？','/':'？'}[event.key];
       if(markKey&&multiMark()){state=selectMark(state,DATA(),markKey);sound('choose');render();event.preventDefault();return;}
-      if(event.key==='Enter' && state.selectedPosition!==null){state=judgeChoice(state,DATA());sound('stamp');if(!state.history.at(-1).valid)sound('confusion');render(true);event.preventDefault();}
+      if(event.key==='Enter' && state.selectedPosition!==null){stampNow();event.preventDefault();}
     }else if(state.phase==='judgment' && event.key==='Enter'){
       state=advanceGame(state);sound(state.phase==='victory'?'win':state.phase==='defeat'?'fail':'start');render(true);event.preventDefault();
     }

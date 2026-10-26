@@ -111,6 +111,32 @@ async def run():
         await play(mobile,GUILD,{},[])
         assert not await mobile.evaluate('document.documentElement.scrollWidth>innerWidth'),'ending overflow'
         report['mobile']={'markButtons':boxes,'stamp':stamp}
+        # 4) Onboarding: start button above the fold, demo teaches valid/invalid, first-time coach only once.
+        onboarding={}
+        for w,h in ((1366,768),(390,844)):
+            fresh=await browser.new_page(viewport={'width':w,'height':h})
+            fresh.on('pageerror',lambda e:errors.append(str(e)))
+            await fresh.goto(URL)
+            cta=await fresh.locator('[data-action=start]').bounding_box()
+            assert cta['y']+cta['height']<=h,(w,cta)
+            await fresh.click('[data-action=demo][data-demo="3"]')
+            ok=await fresh.locator('.demo-result').inner_text()
+            await fresh.click('[data-action=demo][data-demo="1"]')
+            bad=await fresh.locator('.demo-result').inner_text()
+            assert '讀得通' in ok and '退件' in bad,(ok,bad)
+            await fresh.click('[data-action=start]')
+            assert '第一步' in await fresh.locator('.coach').inner_text()
+            await fresh.click('[data-position="0"]')
+            assert '第二步' in await fresh.locator('.coach').inner_text()
+            await fresh.click('[data-action=judge]')
+            assert await fresh.locator('.coach--judgment').count()==1
+            await fresh.click('[data-action=advance]')
+            assert await fresh.locator('.coach').count()==0,'coach must only appear on the first decree'
+            await fresh.goto(URL); await fresh.click('[data-action=start]')
+            assert await fresh.locator('.coach').count()==0,'coach must not return after the tutorial was seen'
+            onboarding[w]={'ctaBottom':cta['y']+cta['height']}
+            await fresh.close()
+        report['onboarding']=onboarding
         assert not errors,errors
         report['pageErrors']=errors
         await browser.close()

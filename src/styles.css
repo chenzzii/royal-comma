@@ -160,3 +160,51 @@
   .game-page{padding-bottom:128px}
 }
 @media (prefers-reduced-motion:reduce){.stamp-cta--ready::after{animation:none;opacity:.6}.stamp-cta{transition:none}}
+
+/* v4.2.2: first screen teaches the mechanic and puts the start button above the fold. */
+.menu-hero--compact{padding:18px 0 26px}
+.menu-hero--compact h1{font-size:clamp(32px,4.4vw,52px);line-height:1.3}
+.menu-hero--compact .menu-subtitle{max-width:640px;margin:12px auto 0;line-height:1.7}
+.howto{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;max-width:900px;margin:20px auto 0;text-align:left}
+.howto__demo{background:linear-gradient(160deg,#f8edcf,#ebd7ae);color:#432c26;border:4px solid #a9895b;border-radius:12px;padding:14px 16px 12px}
+.howto__label{display:block;font-size:12px;letter-spacing:.12em;color:#93603f;font-weight:800;text-align:center}
+.demo-sentence{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;margin:8px 0 6px}
+.demo-glyph{font:700 clamp(24px,3vw,32px)/1.4 'Noto Serif TC','PMingLiU',serif;color:#402d28}
+.demo-slot{position:relative;z-index:1;width:18px;height:40px;padding:0;margin:0 2px;border:1px dashed transparent;border-radius:4px;background:transparent;color:#a4805e;font-size:20px;cursor:pointer;touch-action:manipulation}
+.demo-slot::after{content:'';position:absolute;inset:-4px -9px}
+.demo-slot:hover,.demo-slot:focus-visible{border-color:#855752;background:#e9d3b6;color:#824857}
+.demo-slot--on{background:#824452;border-color:#824452;color:#fff3d3;font-size:26px}
+.demo-result{margin:4px 0 0;padding:9px 12px;border-radius:8px;background:rgba(255,251,238,.75);border:1px solid #d1b189;text-align:center;display:flex;flex-direction:column;gap:3px;min-height:68px;justify-content:center}
+.demo-result b{font:700 19px/1.4 'Noto Serif TC','PMingLiU',serif}
+.demo-result span{font-size:13px;color:#6b5040}
+.demo-result--ok{border-color:#5b8a5e;background:#eef5e4}.demo-result--ok span{color:#2f6b3a;font-weight:700}
+.demo-result--bad{border-color:#b0574f;background:#fbe9e2}.demo-result--bad span{color:#963a33;font-weight:700}
+.howto__steps{list-style:none;counter-reset:step;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;justify-content:center}
+.howto__steps li{counter-increment:step;position:relative;padding:10px 12px 10px 52px;border:1px solid rgba(232,196,130,.32);border-radius:12px;background:rgba(255,236,190,.06);font-size:13px;line-height:1.6;color:#e8d7d1}
+.howto__steps li::before{content:counter(step);position:absolute;left:12px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e6c77e;color:#37222b;font-weight:900}
+.howto__steps b{display:block;color:#ffe2a6;font-size:15px}
+.menu-cta{max-width:900px;margin:18px auto 0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:end;text-align:left}
+.menu-cta .btn--huge{font-size:19px;min-height:62px}
+.menu-cta__seed label{display:block;font-size:12px;color:#cdb8a8;margin-bottom:6px}
+.menu-cta__seed .seed-input{min-height:46px}
+.story-lede--card{text-align:left;margin:0 0 14px;font-size:14px;line-height:1.85;color:#e8d7d1}
+/* First-time coaching on the first document of a chapter. */
+.coach{position:relative;display:flex;align-items:center;gap:10px;max-width:560px;margin:12px auto 4px;padding:10px 14px;border-radius:12px;background:#2f6b4a;color:#f2fff4;text-align:left;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.coach p{margin:0;font-size:14px;line-height:1.6}
+.coach b{color:#ffe08a;margin-right:6px}
+.coach__badge{flex:none;font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:999px;background:#ffe08a;color:#2a3d2d}
+.coach::after{content:'';position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:8px solid transparent;border-bottom:0;border-top-color:#2f6b4a}
+.coach--judgment{margin:14px auto}
+.coach--judgment::after{display:none}
+.sentence--coach .comma-slot{color:#2f6b4a;animation:slotHint 1.4s ease-in-out infinite}
+@keyframes slotHint{0%,100%{background:transparent}50%{background:rgba(47,107,74,.18)}}
+@media (max-width:860px){.howto,.menu-cta{grid-template-columns:minmax(0,1fr)}.howto{gap:12px}.howto__steps li{padding:8px 10px 8px 48px}}
+@media (max-width:590px){.menu-hero--compact{padding:10px 0 18px}.demo-slot{width:14px;margin:0 1px}.demo-slot::after{inset:-4px -8px}.coach p{font-size:13px}}
+@media (prefers-reduced-motion:reduce){.sentence--coach .comma-slot{animation:none;background:rgba(47,107,74,.12)}}
+.demo-slot.demo-slot--on{background:#824452;border:1px solid #824452;color:#fff3d3;font-size:26px}
+.howto__demo{display:flex;flex-direction:column;justify-content:center}
+@media (max-width:860px){
+  /* Only pin the stamp once it can be pressed, so it never hides the sentence the player must tap. */
+  .stamp-cta:disabled{position:static;margin:16px 0 4px;width:100%;box-shadow:none}
+}
+@media (max-width:590px){.parchment .royal-insignia{display:none}}
