@@ -1,0 +1,146 @@
+{
+  "project": "Royal Comma",
+  "handoff_date": "2026-10-26",
+  "base_version": "4.0.0",
+  "source_release_sha256": "19d5d6e18d885dff09c47b5e2493dae86b0cf24750daf339fd8f0cfc03bcbf21",
+  "bundled_release_sha256": "19d5d6e18d885dff09c47b5e2493dae86b0cf24750daf339fd8f0cfc03bcbf21",
+  "verified_tests": 16,
+  "node_test_command": "npm test",
+  "build_command": "npm run build",
+  "browser_command": "python scripts/browser-verify-v4.py",
+  "browser_reverified": true,
+  "files": {
+    "CLAUDE.md": {
+      "bytes": 3248,
+      "sha256": "3df945b82bc4fb66789ad5c376dd99424ce1aa46ce43b8f9d084f8272411db18"
+    },
+    "README.md": {
+      "bytes": 2892,
+      "sha256": "a7191689d886defe83b0140ea2f856a6e703e899f3e487c6af331ada6323a7a5"
+    },
+    "START_HERE.md": {
+      "bytes": 1775,
+      "sha256": "c74d809a96405eb4d808c2d68b222bf1118b9e7e618064e748fe3b5534db009b"
+    },
+    "audio/tired_royal_march.mp3": {
+      "bytes": 1067092,
+      "sha256": "21525042a30775303330c1b26c1c27747412f5bf364691f613ca109e98fcc748"
+    },
+    "content/levels.json": {
+      "bytes": 12639,
+      "sha256": "943e1bce0d6b17399eb40dbeea184babcd71eeb45ad8c77f1b9ac3a20befbc8b"
+    },
+    "docs/ARCHITECTURE.md": {
+      "bytes": 2135,
+      "sha256": "43970110bfad71f04d289545b37747677ff03288d60e47597603aa66e673a2f3"
+    },
+    "docs/HANDOFF.md": {
+      "bytes": 5976,
+      "sha256": "74bc7e5b7ae99335deed3518dbafcd84f2f29b9c17ff12a94270d4dd77bea242"
+    },
+    "docs/PROGRESS.md": {
+      "bytes": 689,
+      "sha256": "c587c929db629d6546b1d016dc5274c9db52adc6d78d4da05ba5e8b981c53641"
+    },
+    "docs/QA_CHECKLIST.md": {
+      "bytes": 1861,
+      "sha256": "a96e7f8e21680faed3ac1abea283d6d3ea8cf475d681f278ed98a461c4c18e89"
+    },
+    "docs/ROADMAP.md": {
+      "bytes": 3063,
+      "sha256": "e07b0b558d4bc5b44ec6207896be0ba62cd13d18dc2f8b9b859f4b3e980b271f"
+    },
+    "docs/browser-reverified-handoff.log": {
+      "bytes": 745,
+      "sha256": "039c15a10d2e6af806265aa0018e392ea1a7f594c77abbc9bfbc54ab3915de87"
+    },
+    "docs/v4-browser-report.json": {
+      "bytes": 744,
+      "sha256": "88ef3f51a22ee954f0eeadcfe51d080f7846eb1762da8a8580657560ec4afb3a"
+    },
+    "docs/v4-defeat-desktop.png": {
+      "bytes": 903015,
+      "sha256": "08e364f573383b3b03a51c83b76411ba05e0f6e8802290238b82333496ac40e3"
+    },
+    "docs/v4-game-desktop.png": {
+      "bytes": 686006,
+      "sha256": "de8f2311bfb87870066e3e71fca6d83246a63f8f7905b811c9fff40104ab4091"
+    },
+    "docs/v4-game-mobile.png": {
+      "bytes": 405006,
+      "sha256": "6eed13021c8d7365365a631768449dbf7a48a2db0abea27cde82e284f49eb979"
+    },
+    "docs/v4-story-desktop.png": {
+      "bytes": 1549809,
+      "sha256": "94d12346dd19c2a9fe52425f85c30fc362dc767b8ed27c5e9bf3daeb78ff246b"
+    },
+    "docs/v4-story-mobile.png": {
+      "bytes": 641890,
+      "sha256": "0cb6176df5ba452edceb7bc669fe8b5724b72be564a69ae5a3f247fb7ae0c4b6"
+    },
+    "package.json": {
+      "bytes": 412,
+      "sha256": "4395eacc8c4303192f6230221ece861599ab32243f9b51f53ef379c16a276180"
+    },
+    "prompts/01_REVIEW_AND_PLAN.md": {
+      "bytes": 1552,
+      "sha256": "8c4e526a6667de851de46bc3ad1f7d19c7c26fa6993f4146a1b939d728871980"
+    },
+    "prompts/02_CONTINUE_DEVELOPMENT.md": {
+      "bytes": 1815,
+      "sha256": "cc99800186ad224de8a41d281b48a3a32d58128485ddc955085de4b5561a47e3"
+    },
+    "scripts/browser-verify-v4.py": {
+      "bytes": 6105,
+      "sha256": "c9a27ba0c1fe581306586190fe538ab8e1bb657d1c90d24fb3c9d0a30e7c9d1b"
+    },
+    "scripts/build.mjs": {
+      "bytes": 1432,
+      "sha256": "ac870a203e935e70668ee64cecdddc81b6661f1f061f1a973ea6230b13ffe36d"
+    },
+    "scripts/dev-server.mjs": {
+      "bytes": 664,
+      "sha256": "dc02c940c3f972c3f41ee1fa52a680a039440755707dfcac3af9edb28a6bf811"
+    },
+    "scripts/find-winning-path.mjs": {
+      "bytes": 904,
+      "sha256": "802d7ecabea6c6d40959ff96f406699a5a17bb6b4e44ba060db36edc0a725799"
+    },
+    "scripts/make-bgm.py": {
+      "bytes": 7249,
+      "sha256": "75e2036dd1a08685d76c95c80391e5634ac1962b131800e3bc22b6a4c6a228d7"
+    },
+    "src/app.mjs": {
+      "bytes": 28841,
+      "sha256": "1b2ffa616d66aaf8982ca7f9d1f397e7441fd0e598e499986b47c4ac5efdb996"
+    },
+    "src/engine.mjs": {
+      "bytes": 7294,
+      "sha256": "62c73bfcd124d83b0be4ee9506062319a5282aff4b58a9a3a75d2f243b06617c"
+    },
+    "src/epilogue.mjs": {
+      "bytes": 12043,
+      "sha256": "baea2cf8aec60b40e51114f9f5b6867316a6f5bddb57b10225e7b94b891aa83a"
+    },
+    "src/shell.html": {
+      "bytes": 536,
+      "sha256": "e37ed3be1a4daa7852f267264259efe355d6e9bf5bd55a492d0ae73abdcdc0d0"
+    },
+    "src/styles.css": {
+      "bytes": 27435,
+      "sha256": "ad4496da78fbbf1e1967a609e47b88875153452625666791a3540fc253741808"
+    },
+    "tests/engine.test.mjs": {
+      "bytes": 5392,
+      "sha256": "09cbbfb322aab198aebd9c2e1d105fd5ce7c6d86220bb4a6112844ad863a75b8"
+    },
+    "tests/epilogue.test.mjs": {
+      "bytes": 3302,
+      "sha256": "2458691291d74f03a05b5d8b9bed69d69853bbcf5e6d92064d2719c355e21f5e"
+    },
+    "國王的遺囑_可玩版.html": {
+      "bytes": 1508675,
+      "sha256": "19d5d6e18d885dff09c47b5e2493dae86b0cf24750daf339fd8f0cfc03bcbf21"
+    }
+  }
+}

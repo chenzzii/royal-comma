@@ -1,0 +1,49 @@
+{
+  "desktopErrors": [],
+  "mobileErrors": [],
+  "bgm": {
+    "duration": 66.606893,
+    "size": 1422815
+  },
+  "musicPlayCalls": 1,
+  "gameplay": [
+    {
+      "stage": "L05",
+      "choice": "B"
+    },
+    {
+      "stage": "L04",
+      "choice": "B"
+    },
+    {
+      "stage": "L06",
+      "choice": "B"
+    },
+    {
+      "stage": "L01",
+      "choice": "B"
+    },
+    {
+      "stage": "L08",
+      "choice": "B"
+    },
+    {
+      "stage": "L03",
+      "choice": "A"
+    },
+    {
+      "stage": "L02",
+      "choice": "A"
+    },
+    {
+      "stage": "L07",
+      "choice": "A"
+    }
+  ],
+  "victory": true,
+  "defeat": true,
+  "bearPrincessCrossover": true,
+  "storyCopy": true,
+  "mobileOverflow": false,
+  "mobileEndingOverflow": false
+}

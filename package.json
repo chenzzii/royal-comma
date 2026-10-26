@@ -1,0 +1,16 @@
+{
+  "name": "royal-comma",
+  "version": "4.0.0",
+  "private": true,
+  "description": "《國王的遺囑》原創荒謬 BGM 與分支王國史結局的離線遊戲",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "dev": "node scripts/dev-server.mjs",
+    "check": "npm test && npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
