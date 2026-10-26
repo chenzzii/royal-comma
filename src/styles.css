@@ -85,3 +85,32 @@
  .chronicle-act{padding-left:12px}
  .chronicle-finale{padding:16px}
 }
+
+/* v4.1: causal chains, court briefing, mobile usability. */
+.parchment__top{padding:0 26px}
+.court-briefing{margin:14px auto 4px;max-width:560px;padding:12px 16px;border:1px dashed #b98f68;border-radius:9px;background:rgba(255,248,230,.62);text-align:left}
+.court-briefing__label{display:block;font-size:11px;letter-spacing:.16em;color:#93603f;font-weight:800;margin-bottom:4px}
+.court-briefing p{margin:4px 0;font-size:14px;line-height:1.75;color:#55392d}
+.court-briefing p::before{content:'· ';color:#a5735a}
+.chain-reaction{text-align:left;margin:4px 0 22px;padding:18px clamp(15px,3.5vw,26px);border:2px solid #9c4d55;border-radius:12px;background:linear-gradient(135deg,#f6dfc7,#ead0b0);box-shadow:0 7px 18px #3e2c1c14}
+.chain-reaction__label{display:block;font-size:12px;letter-spacing:.14em;font-weight:800;color:#8b3f48}
+.chain-reaction__item{margin-top:13px;padding-top:12px;border-top:1px dashed #c19a7c}
+.chain-reaction__item:first-of-type{border-top:0;padding-top:0}
+.chain-reaction h4{margin:0 0 6px;font-family:Georgia,'Noto Serif TC',serif;font-size:clamp(18px,2.4vw,22px);color:#62333a}
+.chain-reaction p{margin:0;font-size:15px;line-height:1.9;color:#4a342b}
+.sound-settings{margin:18px 0 6px;padding:14px;border:1px solid #c8a77c;border-radius:9px;background:#ead6af}
+.sound-settings label{display:flex;justify-content:space-between;font-weight:700;font-size:14px}
+.sound-settings input[type=range]{width:100%;margin:10px 0 6px;accent-color:#854250}
+.sound-settings small{color:#7a604c;font-size:12px}
+/* Comma slots keep their slim look, but the tappable area is widened invisibly. */
+.comma-slot{position:relative;z-index:1;touch-action:manipulation}
+.comma-slot::after{content:'';position:absolute;top:-6px;bottom:-6px;left:-10px;right:-10px}
+@media (max-width:860px){
+  .game-page{padding-bottom:118px}
+  .mission-panel .btn--stamp{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:20;min-height:64px;width:auto;box-shadow:0 10px 28px rgba(0,0,0,.45)}
+  .mission-panel .btn--stamp:disabled{opacity:1;filter:saturate(.35) brightness(.85)}
+}
+@media (max-width:590px){
+  .court-briefing p{font-size:13px}
+  .chain-reaction p{font-size:14px}
+}

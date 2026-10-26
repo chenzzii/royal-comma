@@ -1,3 +1,4 @@
+import {CHAINS,traceWorld} from './world.mjs';
 /**
  * Branching royal chronicle. Every validated decree has an authored aftermath;
  * consequences collide through hand-written crossover scenes and a dynamic finale.
@@ -37,72 +38,14 @@ const CHRONICLE = {
     B: '國王分文未出，命王子拿私房錢給公主。王子把最後一枚金幣交出去時，國王笑著宣布：明年的國家預算也改由太子贊助。'
   }
 };
-const CROSSOVERS = [
-  {
-    ids:['L01:B','L06:B'],
-    title:'熊公主即位（魔界聯姻特別篇）',
-    text:'熊公主不只徒手救出魔王，還決定跟魔王結婚。婚宴時魔王緊張到站不穩，她一手扶住新郎、一手托起倒塌的宮殿。兩國簽下永久和平協議；王子因為「逃避救援」被禁止參加家庭聚餐。'
-  },
-  {
-    ids:['L01:A','L06:B'],
-    title:'遲來的營救費',
-    text:'當年被王子留在塔上的公主轉頭嫁給魔王，婚禮上把「營救費用請款單」交給王子。王子主張自己救過魔王應折抵費用，魔王回覆：「我們現在是夫妻，你找我太太談。」'
-  },
-  {
-    ids:['L01:B','L06:A'],
-    title:'勇者與熊公主的同學會',
-    text:'勇者娶了魔王，熊公主成為婚宴最受歡迎的女賓客。她只用兩根手指搬動宴會長桌，勇者突然明白：當初拯救世界的人可能一直不是自己。'
-  },
-  {
-    ids:['L03:B','L07:B'],
-    title:'皇家多角化經營',
-    text:'國王白天餵巨龍、晚上直播賣魔藥。巨龍被指定為官方試用員，喝完魔藥後打嗝噴火，燒掉整批存貨。國王對外宣稱這叫「零庫存經營」。'
-  },
-  {
-    ids:['L04:A','L06:B'],
-    title:'神殿的婚姻認證',
-    text:'原本支持魔王的祭司，終於等到魔王成為王室女婿。他立即宣布此為神蹟，卻忘了去年才寫過「王室不可相信」的論文；神殿現在把那篇論文列為機密。'
-  },
-  {
-    ids:['L04:A','L06:A'],
-    title:'神殿喜獲一位新主管',
-    text:'祭司既然信任魔王，就理所當然出席魔王與勇者的婚禮，並在台上宣告終身效忠。隔天他的職稱變成「魔界教務長」，待遇只有無限供應的婚禮喜糖。'
-  },
-  {
-    ids:['L02:B','L05:B'],
-    title:'王子的全能履歷',
-    text:'王子不但替侍衛追小偷，後來還親自處罰國王。他將兩次事蹟寫成履歷，自稱「執法、司法、孝親三棲人才」。國王看完只問了一句：「你能先出去工作嗎？」'
-  },
-  {
-    ids:['L05:A','L08:A'],
-    title:'最高權力與最低餘額',
-    text:'國王前腳被大臣罰款，後腳又把整箱金幣送給公主。財政官宣布國庫帳目完全平衡，因為他已經把「罰款」和「送禮」都列為精神資產。'
-  },
-  {
-    ids:['L07:B','L08:B'],
-    title:'太子救市計畫',
-    text:'國王直播賣藥失利，轉頭宣布王子必須自掏腰包。王子從此成為皇室唯一有收入的人，薪水卻一分不剩。王國發現自己開創了最新型的「皇室親子訂閱制」。'
-  },
-  {
-    ids:['L01:B','L08:A'],
-    title:'公主的新國策',
-    text:'熊公主用繼承的金幣成立免費健身房，並在門口掛出標語：「救國不用等王子。」國民體能提升，王子則請病假三個月，理由是看到啞鈴會頭暈。'
-  },
-  {
-    ids:['L03:A','L07:A'],
-    title:'餐飲衛生聯合稽查',
-    text:'巨龍對御膳讚不絕口，偏偏巫師開始販售打嗝藥。兩項產業合作推出「吃飽必打嗝」套餐，衛生部要求標示副作用，廣告部則堅持這就是賣點。'
-  },
-  {
-    ids:['L02:A','L08:B'],
-    title:'沒人肯付的警察加班費',
-    text:'侍衛抓到小偷後申請加班費，財政部卻表示既然王子可以自己拿錢給公主，也應由王子負擔警備預算。王子最後宣布自己要去當小偷，至少還有機會拿回一點。'
-  }
-];
+/* v4.1: cross-stage stories come from the same causal trace the judgment screen uses
+ * (src/world.mjs), so the chronicle can never claim an order that did not happen.
+ * Compatibility view: ids lists every decree involved, the triggering decree last. */
+const CROSSOVERS = CHAINS.map(c=>({id:c.id,ids:[...c.after,c.on],title:c.title,text:c.chronicle}));
 const INTROS = [
-  '國王明明已經駕崩，人事系統卻說他沒有完成離職程序，因此仍須照常上班。王國起初只有一個麻煩：國王留下的句子沒有逗號。後來史官才發現，這其實是那一年最不重要的麻煩。',
-  '皇家文書局只負責標點，不負責理解。國王駕崩後還被排進下週值班表，這項看似謹慎的職務分工，開啟了王國最忙碌的一年。',
-  '史書稱那一年為「逗號之亂」。國王已駕崩卻仍不得休假，名字聽起來不大，實際上動用了王國所有的律師、侍衛和善後委員會。'
+  '國王身體硬朗，卻在某個無聊的午後預立了遺囑。宮廷法典規定遺囑必須「生前試行」，以免死後出錯，於是陛下得親自配合執行。王國起初只有一個麻煩：遺囑的句子沒有逗號。後來史官才發現，這其實是那一年最不重要的麻煩。',
+  '皇家文書局只負責標點，不負責理解。國王堅持「遺囑要趁朕還活著先試辦一次」，這項看似謹慎的行政程序，開啟了王國最忙碌的一年。',
+  '史書稱那一年為「逗號之亂」。起因是國王想確認自己的遺囑能不能正常運作，名字聽起來不大，實際上動用了王國所有的律師、侍衛和善後委員會。'
 ];
 function chooseVariant(seed, count){
   let h=0;for(const c of `${seed}:${count}`) h=((h<<5)-h+c.charCodeAt(0))|0;
@@ -113,15 +56,9 @@ function makeChronicle(game){
   const valid=history.filter(h=>h.valid && CHRONICLE[h.stageId]?.[h.choiceId]);
   const entries=valid.map(h=>({id:`${h.stageId}:${h.choiceId}`,text:CHRONICLE[h.stageId][h.choiceId],stage:h.stageTitle}));
   const seen=new Set(entries.map(x=>x.id));
-  const orderIndex=id=>entries.findIndex(e=>e.id===id);
-  const connections=CROSSOVERS.filter(x=>x.ids.every(id=>seen.has(id))).map(c=>{
-    const reordered=c.ids.length===2 && orderIndex(c.ids[0])>orderIndex(c.ids[1]);
-    if(!reordered)return c;
-    if(c.ids[0]==='L01:B' && c.ids[1]==='L06:B')return {...c,text:'公主先與魔王成婚，沒想到新婚丈夫隨後就被困在魔塔。王子立刻請了病假，公主只能徒手扛起整座塔救夫，練成「熊公主」。魔王婚後第一次接受訪問時表示：「我以為我娶的是公主，原來娶的是救難隊。」'};
-    if(c.ids[0]==='L01:A' && c.ids[1]==='L06:B')return {...c,text:'公主已經和魔王舉行婚禮，王子卻在婚後才衝去營救魔王。他堅持自己是和平使者，公主回覆：「謝謝你救我丈夫，晚餐不必來了。」王子只拿到一張過期的伴郎邀請函。'};
-    if(c.ids[0]==='L01:B' && c.ids[1]==='L06:A')return {...c,text:'勇者與魔王先辦完婚禮，沒想到魔王又被關入高塔。王子藉口裝備送洗，公主親自把魔王救出來，正式成為熊公主。勇者看著獲救的新婚伴侶，決定把傳說之劍改造成健身器材。'};
-    return c;
-  });
+  const world=traceWorld(history);
+  // Every chain that actually fired, in the order it happened; no cap, no duplicates.
+  const connections=world.steps.flatMap(st=>st.reactions).map(c=>({title:c.title,text:c.chronicle}));
   const doomed=game?.phase==='defeat'||game?.endingReason==='chaos';
   const title = doomed
     ? game.invalidAttempts>=4 ? '《文書局把王國退件了》' : game.riskyCount>=3 ? '《八個逗號還沒寫完，王國先寫完了》' : '《史上最短命的行政改革》'
@@ -151,11 +88,14 @@ function makeChronicle(game){
   }else{
     const high=game.riskyCount;
     const lastValid=valid.at(-1);
-    const social=seen.has('L01:B')?'熊公主現在可以徒手搬開任何擋路的宮門。':'公主仍在研究一套能讓王子認真工作的制度。';
+    const f=world.facts;
+    const social=f.bearPrincess?'熊公主現在可以徒手搬開任何擋路的宮門。'
+      :f.princess==='tower'?'公主仍住在塔上，透過吊籃處理國事，效率比朝廷還高。'
+      :'公主仍在研究一套能讓王子認真工作的制度。';
     const economic=seen.has('L07:B')?'財政部將國王的直播帶貨列為國家級災害。':'財政部宣告今年最大的成就，是終於不用替國王處理直播退款。';
     epilogue=`八份聖旨終於全部蓋章。最後傳出的公告是「${lastValid?.punctuated??'公文辦結'}」，而王國居然還保有 ${7-game.chaos} 點距離滅亡的安全空間。${social}${economic} 後人研究你的 ${high} 次高風險解讀與 ${detours} 次退件後，決定將你升任「首席逗號風險顧問」，年薪照舊，責任加倍。`;
   }
-  return {title,opening,acts,connections:connections.slice(0,4).map(({title,text})=>({title,text})),epilogue,
+  return {title,opening,acts,connections,epilogue,
     signature:history.map(h=>`${h.stageId}:${h.choiceId??`X${h.position}`}`).join('|')};
 }
 export {makeChronicle, CHRONICLE, CROSSOVERS};

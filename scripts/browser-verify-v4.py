@@ -1,4 +1,4 @@
-import asyncio, json, pathlib
+import asyncio, json, os, pathlib
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 HTML=ROOT/'dist/index.html'
@@ -6,7 +6,9 @@ DATA=json.loads((ROOT/'content/levels.json').read_text())
 NAME={l['title']:l for l in DATA['levels']}
 async def run():
  async with async_playwright() as p:
-  browser=await p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
+  # Set CHROMIUM_PATH to use a system browser; otherwise Playwright's bundled Chromium is used.
+  launch_path={'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}
+  browser=await p.chromium.launch(**launch_path,headless=True,args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
   page=await browser.new_page(viewport={'width':1366,'height':850},device_scale_factor=1, permissions=['clipboard-read','clipboard-write'])
   await page.evaluate("() => {window.__musicPlayCalls=0;const originalPlay=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){window.__musicPlayCalls++;return originalPlay.call(this)};return true;}")
   errors=[]
@@ -22,8 +24,11 @@ async def run():
   }''')
   assert 65<music_status['duration']<69,music_status
   # Track music play request after a real click; inspect browser outcome too.
+  # v4.1 loops BGM through Web Audio (gapless); <audio>.play() is only the fallback path.
+  await page.wait_for_function("window.__royalMusic && window.__royalMusic().playing", timeout=15000)
   play_requests=await page.evaluate('window.__musicPlayCalls')
-  assert play_requests>=1,play_requests
+  music_state=await page.evaluate('window.__royalMusic()')
+  assert music_state['mode'] in ('webaudio','element'),music_state
   stage=await page.locator('.stage-title').inner_text()
   await page.locator('[data-position="0"]').click()
   await page.locator('[data-action=judge]').click()
@@ -88,7 +93,7 @@ async def run():
   ending_overflow=await mobile.evaluate('document.documentElement.scrollWidth > window.innerWidth')
   assert not ending_overflow,'Mobile ending horizontal overflow' 
   assert not errors and not mobile_errors,(errors,mobile_errors)
-  report={'desktopErrors':errors,'mobileErrors':mobile_errors,'bgm':music_status,'musicPlayCalls':play_requests,'gameplay':snapshots,'victory':True,'defeat':True,'bearPrincessCrossover':True,'storyCopy':True,'mobileOverflow':overflow,'mobileEndingOverflow':ending_overflow}
+  report={'desktopErrors':errors,'mobileErrors':mobile_errors,'bgm':music_status,'musicPlayCalls':play_requests,'musicState':music_state,'gameplay':snapshots,'victory':True,'defeat':True,'bearPrincessCrossover':True,'storyCopy':True,'mobileOverflow':overflow,'mobileEndingOverflow':ending_overflow}
   (ROOT/'docs'/'v4-browser-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
   print(json.dumps(report,ensure_ascii=False,indent=2))
   await browser.close()

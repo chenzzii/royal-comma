@@ -118,7 +118,9 @@ test('bad high-chaos choices can cause defeat even without invalid punctuation',
 
 test('bear princess story preserved and sound-related UI is independent of mission',()=>{
   let g=newGame(data,'BEAR');g={...g,round:g.order.indexOf(0)};
-  g=judgeChoice(selectPosition(g,data,4),data);
+  // v4.1: hidden slots differ per decree, so use the authored position instead of a fixed index.
+  const bear=data.levels[0].choices.find(c=>c.id==='B');
+  g=judgeChoice(selectPosition(g,data,bear.insertAfter),data);
   assert.equal(g.history.at(-1).headline,'熊公主橫空出世');
   assert.match(g.history.at(-1).scene,/馬匹情緒不佳/);
 });

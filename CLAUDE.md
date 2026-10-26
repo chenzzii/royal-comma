@@ -9,14 +9,16 @@
 - 八關順序依 seed 打亂，遊戲有勝敗、得分與結局；保留高風險／保守選擇的取捨。
 - 7 點混亂亡國，必須在進遊戲前告知。
 - 音樂保留「無奈、荒謬、略顯笨拙的滑稽宮廷感」，目前 BGM 為原創 `audio/tired_royal_march.mp3`。使用者提供的參考音檔只用作**風格參考**，不得取樣、改編其辨識性旋律或直接加入發行包。
-- 結局要參照當局所有有效選擇、選擇發生順序、跨關連鎖與退件歷史；避免互相矛盾的敘事。不要宣稱 256 篇結局是獨立寫作：目前是 16 個分支片段與 12 個跨關條件的組合。
+- 結局要參照當局所有有效選擇、選擇發生順序、跨關連鎖與退件歷史；避免互相矛盾的敘事。不要宣稱 256 篇結局是獨立寫作：v4.1 起是 16 個分支片段＋`src/world.mjs` 的 35 條有先後條件的因果鏈組合而成。
+- v4.1 起，先前的命令會在後續關卡的「宮廷速報」與判決畫面的「連鎖反應」中出現；**只改劇情、不改數值**（見 `docs/DECISIONS.md`）。速報只能寫已發生的事，不得洩漏本關解讀。
+- 新增或改寫聖旨時，有效位置不可再形成固定規律（見 `tests/world.test.mjs` 的多樣性測試）。
 - 保留單一可離線開啟的 HTML 發行形式。可以改進原始碼組織，但不得破壞既有單檔建置。
 
 ## Tooling and location
 - Node.js >=18，原始碼是 **原生 ESM JavaScript**、HTML、CSS；不需要 npm install。
 - `npm test` 執行 Node 內建測試；`npm run build` 生成 `dist/index.html` 及根目錄單檔 HTML；`npm run dev` 啟動本機 HTTP server。
-- `python scripts/browser-verify-v4.py` 是可選的 Playwright + Chromium 瀏覽器驗證，需環境備有 Playwright 與 `/usr/bin/chromium`，換系統要調整瀏覽器路徑。
-- 核心：`src/engine.mjs`；敘事：`src/epilogue.mjs`；介面／音訊：`src/app.mjs`；樣式：`src/styles.css`；關卡：`content/levels.json`。
+- `python scripts/browser-verify-v4.py` 與 `python scripts/browser-verify-v41.py` 是可選的 Playwright 瀏覽器驗證；預設用 Playwright 內建 Chromium，可用環境變數 `CHROMIUM_PATH` 指定其他瀏覽器。
+- 核心：`src/engine.mjs`；世界狀態與因果鏈：`src/world.mjs`；敘事：`src/epilogue.mjs`；介面／音訊：`src/app.mjs`；樣式：`src/styles.css`；關卡：`content/levels.json`。
 - `src/shell.html` + `scripts/build.mjs` 內嵌 CSS/JS/MP3；請編修來源，不要直接編修建置產物。
 
 ## Workflow and truthfulness

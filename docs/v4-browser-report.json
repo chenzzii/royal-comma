@@ -5,7 +5,14 @@
     "duration": 66.606893,
     "size": 1422815
   },
-  "musicPlayCalls": 1,
+  "musicPlayCalls": 0,
+  "musicState": {
+    "mode": "webaudio",
+    "playing": true,
+    "loopSeconds": 66.20689342403628,
+    "volume": 0.45,
+    "contextState": "running"
+  },
   "gameplay": [
     {
       "stage": "L05",
