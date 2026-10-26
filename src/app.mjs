@@ -191,9 +191,9 @@ import {courtBriefing, latestReactions} from './world.mjs';
     return `<header class="topbar"><button class="brand" data-action="home" title="返回首頁" aria-label="回到首頁">${crown}<span class="brand__copy"><strong>皇家文書局</strong><small>THE ROYAL SCRIBE</small></span></button><nav class="topbar__actions">${active?`<span class="seed-tag">種子 <b>${escapeHtml(state.seed)}</b></span>`:''}<button data-action="music" class="icon-button" title="${musicOff?'開啟':'關閉'}背景音樂" aria-label="${musicOff?'開啟':'關閉'}背景音樂">${musicOff?'♫̸':'♫'}</button><button data-action="sound" class="icon-button" title="${mute?'開啟':'關閉'}蓋章音效" aria-label="${mute?'開啟':'關閉'}音效">${mute?'🔇':'🔊'}</button><button data-action="help" class="small-button" aria-label="遊戲規則">規則 <span aria-hidden="true">?</span></button></nav></header>`;
   }
   function menu() {
-    return `<main class="menu-page"><div class="menu-hero"><div class="eyebrow"><span class="diamond">◆</span> 王室敕令 · 機密文件 001 <span class="diamond">◆</span></div>
+    return `<main class="menu-page"><div class="menu-hero"><div class="eyebrow"><span class="diamond">◆</span> 第一章 · 國王的遺囑只有一個逗號 <span class="diamond">◆</span></div>
       <div class="hero-crown">${crown}</div>
-      <h1>國王的遺囑<br/><em>只有一個逗號</em></h1>
+      <h1>這個標點符號<br/><em>誰放的？</em></h1>
       <p class="menu-subtitle">你有一個逗號，和讓王國滅亡的權力。</p>
       ${flourish}
       <p class="story-lede">國王身體健康，卻預立了八份沒有標點的遺囑。<br/>依宮廷規定，遺囑必須「生前試行」，以免死後出錯。<br/>沒有人告訴你哪種解讀才算正確。<br/>選擇能造成更大混亂的版本，可以獲得高分——前提是王國還存在。</p>

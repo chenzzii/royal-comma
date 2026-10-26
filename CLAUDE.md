@@ -1,4 +1,4 @@
-# CLAUDE.md — 《國王的遺囑只有一個逗號》 / Royal Comma
+# CLAUDE.md — 《這個標點符號誰放的？》（第一章：國王的遺囑只有一個逗號）/ Royal Comma
 
 ## Project contract / 專案不可變原則
 - **先讀 `START_HERE.md`、`docs/HANDOFF.md`、`docs/ARCHITECTURE.md`、`docs/ROADMAP.md`，再閱讀實際程式碼。**

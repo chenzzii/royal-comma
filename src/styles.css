@@ -114,3 +114,5 @@
   .court-briefing p{font-size:13px}
   .chain-reaction p{font-size:14px}
 }
+/* Menu cards could not shrink below their content on phones (v4.0 overflowed 9px at 390px). */
+@media (max-width:860px){.menu-options,.game-layout{grid-template-columns:minmax(0,1fr)}.seed-input{min-width:0}}

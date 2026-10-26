@@ -117,6 +117,9 @@ async def run():
         # Mobile: stamp reachable without scrolling, widened tap targets, no overflow, long ending.
         mobile=await browser.new_page(viewport={'width':390,'height':844},has_touch=True)
         mobile.on('pageerror',lambda e:errors.append(str(e)))
+        await mobile.goto((ROOT/'dist/index.html').as_uri(),wait_until='load')
+        assert not await mobile.evaluate('document.documentElement.scrollWidth>innerWidth'),'Mobile menu horizontal overflow'
+        assert '這個標點符號' in await mobile.locator('h1').inner_text()
         await start(mobile,seeds['weddingFirst'])
         level=BY_TITLE[await mobile.locator('.stage-title').inner_text()]
         target=level['choices'][0]['insertAfter']

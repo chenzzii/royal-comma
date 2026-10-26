@@ -63,3 +63,8 @@
 - 修改：`src/app.mjs` 主選單開場、`src/shell.html` 網頁描述、`src/epilogue.mjs` 三段 `INTROS`、`src/world.mjs` 第一關宮廷速報、`docs/HANDOFF.md` 遊戲定位。
 - 新測試：掃描玩家可見文字不得出現「駕崩」等字眼，並確認主選單有「生前試行」設定。
 - 結果：`npm test` 27/27 通過；`npm run build` 成功；`browser-verify-v4.py`、`browser-verify-v41.py` 都通過。新的主選單截圖存為 `docs/v41-menu-desktop.png`。
+
+## 改名與手機選單修正（2026-10-26）
+- 遊戲名稱改為《這個標點符號誰放的？》，「國王的遺囑只有一個逗號」改為第一章名稱：主選單標題與標頭小字、`<title>`、網頁描述、README、CLAUDE.md。
+- 修正 v4.0 就存在的手機主選單溢出：390px 時兩張卡片超出 9px，改用 `minmax(0,1fr)`。`browser-verify-v41.py` 增加主選單溢出檢查。
+- `npm test` 27/27 通過；`npm run build` 成功；兩支瀏覽器腳本都通過；320px 與 390px 主選單都沒有溢出。
