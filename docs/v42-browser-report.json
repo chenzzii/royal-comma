@@ -1,0 +1,133 @@
+{
+  "continue": {
+    "royal": [
+      {
+        "stage": "L06",
+        "choice": "A",
+        "quote": "勇者不娶公主，娶的是魔王",
+        "chains": []
+      },
+      {
+        "stage": "L08",
+        "choice": "B",
+        "quote": "這箱金幣國王不給，王子要給公主",
+        "chains": []
+      },
+      {
+        "stage": "L04",
+        "choice": "B",
+        "quote": "祭司不信，國王竟然相信魔王",
+        "chains": []
+      },
+      {
+        "stage": "L05",
+        "choice": "B",
+        "quote": "朝會上大臣不罰，王子竟然罰國王",
+        "chains": []
+      },
+      {
+        "stage": "L02",
+        "choice": "A",
+        "quote": "侍衛長不抓王子，親自抓小偷",
+        "chains": [
+          "自費破案"
+        ]
+      },
+      {
+        "stage": "L07",
+        "choice": "B",
+        "quote": "缺錢的巫師不賣，國王改賣魔藥",
+        "chains": [
+          "親子接力破產"
+        ]
+      },
+      {
+        "stage": "L01",
+        "choice": "A",
+        "quote": "王子說他不救公主，去救魔王",
+        "chains": [
+          "王子救的是別人的另一半"
+        ]
+      },
+      {
+        "stage": "L03",
+        "choice": "A",
+        "quote": "從今天起御廚不餵國王，改餵巨龍",
+        "chains": []
+      }
+    ],
+    "guild": [
+      {
+        "stage": "G01",
+        "choice": "A",
+        "quote": "會長退休了，沒人反對",
+        "chains": []
+      },
+      {
+        "stage": "G06",
+        "choice": "A",
+        "quote": "會長從不說謊，全城都知道",
+        "chains": []
+      },
+      {
+        "stage": "G03",
+        "choice": "B",
+        "quote": "王子欠的錢不用還？會長說",
+        "chains": [
+          "一箱簽名照"
+        ]
+      },
+      {
+        "stage": "G02",
+        "choice": "B",
+        "quote": "誰說會長不能收禮物？",
+        "chains": [
+          "國王送來的中獎通知"
+        ]
+      },
+      {
+        "stage": "G04",
+        "choice": "B",
+        "quote": "稅務官不查會長，查帳房",
+        "chains": [
+          "皇室搬的箱子不能查"
+        ]
+      },
+      {
+        "stage": "G05",
+        "choice": "B",
+        "quote": "股東分紅沒有問題？",
+        "chains": []
+      }
+    ]
+  },
+  "direct": {
+    "stage": "G05",
+    "endQuestionValid": true,
+    "rejected": false
+  },
+  "bankruptcy": true,
+  "mobile": {
+    "markButtons": [
+      {
+        "x": 93.984375,
+        "y": 665.6875,
+        "width": 96.015625,
+        "height": 44
+      },
+      {
+        "x": 200,
+        "y": 665.6875,
+        "width": 96.015625,
+        "height": 44
+      }
+    ],
+    "stamp": {
+      "x": 12,
+      "y": 761,
+      "width": 366,
+      "height": 71
+    }
+  },
+  "pageErrors": []
+}

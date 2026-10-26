@@ -3,8 +3,9 @@ import path from 'node:path';
 const root = process.cwd();
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const json = JSON.parse(read('content/levels.json'));
+const guild = JSON.parse(read('content/guild.json'));
 // Modules are concatenated in dependency order into one classic script.
-const MODULES = ['src/engine.mjs', 'src/world.mjs', 'src/epilogue.mjs', 'src/app.mjs'];
+const MODULES = ['src/engine.mjs', 'src/world.mjs', 'src/guild.mjs', 'src/epilogue.mjs', 'src/app.mjs'];
 const IMPORT_RE = /^import\s*\{[^}]*\}\s*from\s*'\.\/[\w-]+\.mjs';\s*$/gm;
 const EXPORT_RE = /^export\s*\{[\s\S]*?\};\s*$/m;
 const parts = MODULES.map(file => {
@@ -13,7 +14,7 @@ const parts = MODULES.map(file => {
   return `// ---- ${file} ----\n${source}`;
 });
 const css = read('src/styles.css').replace(/<\/style>/gi, '<\\/style>');
-const dataScript = `const GAME_DATA = ${JSON.stringify(json).replace(/</g, '\\u003c')};`;
+const dataScript = `const GAME_DATA = ${JSON.stringify(json).replace(/</g, '\\u003c')};\nconst GUILD_DATA = ${JSON.stringify(guild).replace(/</g, '\\u003c')};`;
 const bgm = fs.readFileSync(path.join(root, 'audio/tired_royal_march.mp3')).toString('base64');
 const js = `${dataScript}\nconst BGM_DATA_URI = 'data:audio/mpeg;base64,${bgm}';\n${parts.join('\n')}`.replace(/<\/script>/gi, '<\\/script>');
 // Parse-only check: duplicate top-level names across modules would break the single file.

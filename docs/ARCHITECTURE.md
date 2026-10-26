@@ -7,6 +7,8 @@
 ## 功能責任
 - `src/engine.mjs`: 純函式；`newGame`, `selectPosition`, `judgeChoice`, `advanceGame`, `generateOrder`, `validateGameData`, `canSurviveAll`。不應包含 DOM。
 - `src/world.mjs`（v4.1）: 純函式。`INITIAL_FACTS`、`WORLD_EFFECTS`（每個決定如何改變世界）、`CHAINS`（`on` 觸發於哪個決定、`after` 必須更早發生、可選 `when(facts)`；含 `judgment` 判決畫面文字與 `chronicle` 史官文字）、`BRIEFINGS`（下令前速報，`about` 標明來源決定）、`RIPPLES`；函式 `traceWorld`、`latestReactions`、`courtBriefing`。不看 seed 順序，只看實際執行順序。
+- `src/guild.mjs`（v4.2）: 第二章 `GUILD_WORLD`（同樣的 initial/effects/chains/briefings/ripples/first 結構）與 `makeGuildChronicle`。`traceWorld(history, GUILD_WORLD, prelude)` 會先重播第一章 `prelude`，所以跨章連鎖可在 `after` 寫 `L0x:X`。
+- `content/guild.json`: 第二章資料；`marks` 列出可用符號，選項有 `mark` 與可選的 `also`（同義擺法）。
 - `src/epilogue.mjs`: `makeChronicle`, `CHRONICLE`, `CROSSOVERS`（v4.1 起由 `CHAINS` 推得的唯讀檢視）；按歷史生成結局。
 - `src/app.mjs`: 狀態與呈現、鍵盤／點擊事件、音訊、localStorage、複製與下載；保留 XSS escape 機制。
 - `src/styles.css`: 響應式羊皮紙、判決、結局畫面。

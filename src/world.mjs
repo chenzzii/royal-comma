@@ -201,38 +201,52 @@ const RIPPLES = {
 const FIRST_BRIEFING='遺囑試辦第一天。國王精神很好，坐在第一排等著看自己的遺囑怎麼被執行。王國目前一切如常——這是最後一次。';
 
 function decisionKey(entry){return `${entry.stageId}:${entry.choiceId}`;}
-/** Replays valid decrees in executed order. Returns final facts and per-step reactions. */
-function traceWorld(history){
-  let facts=INITIAL_FACTS;const steps=[];
+/* A "world" bundles one chapter's story rules. Chapter 1 is the default everywhere. */
+const ROYAL_WORLD = Object.freeze({initial:INITIAL_FACTS,effects:WORLD_EFFECTS,chains:CHAINS,briefings:BRIEFINGS,ripples:RIPPLES,first:()=>FIRST_BRIEFING});
+/**
+ * Replays valid decisions in executed order. Returns final facts and per-step reactions.
+ * `prelude` (optional) = valid history of the previous chapter: its facts and decision keys are
+ * already true when this chapter starts, so cross-chapter chains can require them in `after`.
+ */
+function traceWorld(history,world=ROYAL_WORLD,prelude=[]){
+  let facts=world.initial;const priorKeys=new Set();
+  if(world!==ROYAL_WORLD){
+    const earlier=traceWorld(prelude);
+    facts={...earlier.facts,...world.initial};
+    for(const s of earlier.steps)priorKeys.add(s.key);
+  }
+  const steps=[];
   for(const entry of history??[]){
     if(!entry?.valid)continue;
-    const key=decisionKey(entry),prior=new Set(steps.map(s=>s.key));
-    if(prior.has(key))continue; // a decree can only be executed once
-    const reactions=CHAINS.filter(c=>c.on===key&&c.after.every(k=>prior.has(k))&&(!c.when||c.when(facts)));
+    const key=decisionKey(entry);
+    if(priorKeys.has(key))continue; // a decision can only be executed once
+    const reactions=world.chains.filter(c=>c.on===key&&c.after.every(k=>priorKeys.has(k))&&(!c.when||c.when(facts)));
     const before=facts;
-    facts=WORLD_EFFECTS[key]?WORLD_EFFECTS[key](facts):facts;
+    facts=world.effects[key]?world.effects[key](facts):facts;
     steps.push({key,before,after:facts,reactions});
+    priorKeys.add(key);
   }
-  return {facts,steps};
+  return {facts,steps,priorKeys};
 }
-/** Reactions to show on the judgment screen for the decree just stamped. */
-function latestReactions(history){
+/** Reactions to show on the judgment screen for the decision just stamped. */
+function latestReactions(history,world=ROYAL_WORLD,prelude=[]){
   const last=history?.at(-1);
   if(!last?.valid)return [];
-  const step=traceWorld(history).steps.at(-1);
+  const step=traceWorld(history,world,prelude).steps.at(-1);
   return step&&step.key===decisionKey(last)?step.reactions:[];
 }
 /** Up to two neutral briefing lines for the stage about to be punctuated. */
-function courtBriefing(history,stageId){
-  const {facts,steps}=traceWorld(history);
-  if(!steps.length)return [FIRST_BRIEFING];
-  const picked=BRIEFINGS.filter(b=>b.stage===stageId&&b.when(facts)).slice(0,2);
+function courtBriefing(history,stageId,world=ROYAL_WORLD,prelude=[]){
+  const {facts,steps}=traceWorld(history,world,prelude);
+  const picked=world.briefings.filter(b=>b.stage===stageId&&b.when(facts)).slice(0,2);
+  // Opening line of a chapter; a later chapter may also carry one note from the previous chapter.
+  if(!steps.length)return [world.first(facts,prelude),...picked.slice(0,1).map(b=>b.text)];
   const lines=picked.map(b=>b.text),lastKey=steps.at(-1).key;
-  // Add the latest decree's aftermath unless a stage note already covers that decree.
+  // Add the latest decision's aftermath unless a stage note already covers that decision.
   if(lines.length<2&&!picked.some(b=>b.about===lastKey)){
-    const ripple=RIPPLES[lastKey]?.(facts);
+    const ripple=world.ripples[lastKey]?.(facts);
     if(ripple)lines.push(ripple);
   }
   return lines;
 }
-export {INITIAL_FACTS,WORLD_EFFECTS,CHAINS,BRIEFINGS,RIPPLES,FIRST_BRIEFING,decisionKey,traceWorld,latestReactions,courtBriefing};
+export {INITIAL_FACTS,WORLD_EFFECTS,CHAINS,BRIEFINGS,RIPPLES,FIRST_BRIEFING,ROYAL_WORLD,decisionKey,traceWorld,latestReactions,courtBriefing};
