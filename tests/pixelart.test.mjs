@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {sceneSvg,SCENE_KEYS,ART_W,ART_H} from '../src/pixelart.mjs';
-const royal=JSON.parse(fs.readFileSync(new URL('../content/levels.json',import.meta.url)));
+const load=f=>JSON.parse(fs.readFileSync(new URL(`../content/${f}.json`,import.meta.url)));
+const royal=load('levels'),guild=load('guild'),cathedral=load('cathedral');
 
-test('every chapter 1 outcome has its own 8-bit illustration', ()=>{
-  const keys=royal.levels.flatMap(l=>l.choices.map(c=>`${l.id}:${c.id}`));
+test('every outcome in all three chapters has its own 8-bit illustration', ()=>{
+  const keys=[...royal.levels,...guild.levels,...cathedral.levels].flatMap(l=>l.choices.map(c=>`${l.id}:${c.id}`));
   assert.deepEqual([...SCENE_KEYS].sort(),[...keys].sort());
   const seen=new Set();
   for(const k of keys){
@@ -20,8 +21,8 @@ test('every chapter 1 outcome has its own 8-bit illustration', ()=>{
   }
 });
 
-test('illustrations only exist for chapter 1 and escape their label', ()=>{
-  assert.equal(sceneSvg('G01','A'),'');
+test('unknown outcomes have no illustration; labels are escaped', ()=>{
+  assert.equal(sceneSvg('G09','A'),'');
   assert.equal(sceneSvg('L01','Z'),'');
   assert.ok(!sceneSvg('L01','A','<b>"x"</b>').includes('<b>'));
 });

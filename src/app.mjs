@@ -417,7 +417,7 @@ import {sceneSvg} from './pixelart.mjs';
   function render(resetScroll=false) {
     const focus = resetScroll ? null : focusDescriptor();
     const key = state ? `${state.phase}-${state.round}` : 'menu';
-    root.innerHTML = `${topbar()}${state ? state.phase==='editing'?gameplay():state.phase==='judgment'?judgment():ending():menu()}<footer class="site-footer">© 皇家文書局　·　所有人物與政變均屬虛構　·　原創網頁遊戲 v4.7</footer>${help()}<div class="toast" role="status" aria-live="polite" id="toast"></div>${cutscene()}`;
+    root.innerHTML = `${topbar()}${state ? state.phase==='editing'?gameplay():state.phase==='judgment'?judgment():ending():menu()}<footer class="site-footer">© 皇家文書局　·　所有人物與政變均屬虛構　·　原創網頁遊戲 v4.8</footer>${help()}<div class="toast" role="status" aria-live="polite" id="toast"></div>${cutscene()}`;
     if (key !== stageViewKey) root.querySelector('main')?.classList.add(...(cut?.type==='stamp'?['scene-in','scene-in--stamp']:['scene-in']));
     cut = null;
     if (resetScroll || key !== stageViewKey) window.scrollTo({top:0,behavior:'instant'});
