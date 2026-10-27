@@ -21,6 +21,32 @@ function insertMark(raw, position, mark = COMMA) {
 function insertComma(raw, position) { return insertMark(raw, position, COMMA); }
 function marksOf(data){return Array.isArray(data?.marks)&&data.marks.length?data.marks:[COMMA];}
 function choiceMark(choice){return choice.mark??COMMA;}
+/* v4.4 multi-mark documents: data.marksPerDoc = N (>1). The player must place exactly N marks.
+ * A reading is `placements:[{at, mark, accept?}]` (accept = marks that mean the same there)
+ * plus optional `also:[[...]]` alternative placement sets that say the same thing. */
+function marksPerDoc(data){return Number.isInteger(data?.marksPerDoc)&&data.marksPerDoc>1?data.marksPerDoc:1;}
+function isMulti(data){return marksPerDoc(data)>1;}
+function insertMarks(raw, placed) {
+  const chars=Array.from(raw),at=new Map();
+  for(const p of placed??[]){
+    if(!Number.isInteger(p.position)||p.position<0||p.position>chars.length)throw new RangeError('Invalid comma position');
+    if(!ALLOWED_MARKS.includes(p.mark))throw new RangeError('Invalid punctuation mark');
+    if(at.has(p.position))throw new RangeError('Two marks in one slot');
+    at.set(p.position,p.mark);
+  }
+  let out='';
+  for(let i=0;i<=chars.length;i++){if(at.has(i))out+=at.get(i);if(i<chars.length)out+=chars[i];}
+  return out;
+}
+const normAlt=list=>list.map(p=>({at:p.at,accept:p.accept??[p.mark]}));
+function readingAlternatives(choice){return [normAlt(choice.placements),...(choice.also??[]).map(normAlt)];}
+function matchesAlt(alt,placed){
+  return placed.length===alt.length&&new Set(placed.map(p=>p.position)).size===placed.length
+    &&placed.every(p=>alt.some(a=>a.at===p.position&&a.accept.includes(p.mark)));
+}
+function findMultiChoice(level,placed){return level?.choices.find(c=>readingAlternatives(c).some(a=>matchesAlt(a,placed)))||null;}
+function primaryPlacements(choice){return choice.placements.map(p=>({position:p.at,mark:p.mark}));}
+function sortPlaced(placed){return [...placed].sort((a,b)=>a.position-b.position);}
 /** Every [mark, position] placement that executes this reading (primary first). */
 function placementsOf(choice){return [[choiceMark(choice),choice.insertAfter],...(choice.also??[]).map(a=>[a.mark??COMMA,a.insertAfter])];}
 function validateGameData(data){
@@ -29,6 +55,31 @@ function validateGameData(data){
   const marks=marksOf(data);
   if(!marks.every(m=>ALLOWED_MARKS.includes(m)))throw Error('Unknown punctuation mark');
   const ids=new Set();
+  if(isMulti(data)){
+    const n=marksPerDoc(data);
+    for(const level of data.levels){
+      if(ids.has(level.id))throw Error(`Duplicate stage ${level.id}`);ids.add(level.id);
+      if(!Array.isArray(level.choices)||level.choices.length!==2)throw Error(`Two outcomes required in ${level.id}`);
+      if(level.choices[0].chaosDelta===level.choices[1].chaosDelta)throw Error(`Chaos must differ for meaningful risk decision in ${level.id}`);
+      const len=Array.from(level.raw).length;
+      for(const c of level.choices){
+        if(!Array.isArray(c.placements))throw Error(`Placements required in ${level.id}/${c.id}`);
+        for(const alt of readingAlternatives(c)){
+          if(alt.length!==n||new Set(alt.map(a=>a.at)).size!==n)throw Error(`Each reading needs ${n} marks in distinct slots: ${level.id}/${c.id}`);
+          if(!alt.every(a=>Number.isInteger(a.at)&&a.at>=0&&a.at<=len&&a.accept.length&&a.accept.every(m=>marks.includes(m))))throw Error(`Bad placement in ${level.id}/${c.id}`);
+        }
+        if(!c.placements.every(p=>(p.accept??[p.mark]).includes(p.mark)))throw Error(`Primary mark must be accepted: ${level.id}/${c.id}`);
+        if(insertMarks(level.raw,primaryPlacements(c))!==c.rendered||!Number.isInteger(c.chaosDelta)||!c.meaning||!c.consequence||!c.scene||!c.afterword||!c.headline)throw Error(`Invalid outcome ${level.id}/${c.id}`);
+      }
+      // No single submission may execute both readings.
+      const [A,B]=level.choices;
+      for(const a of readingAlternatives(A))for(const b of readingAlternatives(B)){
+        const sameSlots=a.every(x=>b.some(y=>y.at===x.at));
+        if(sameSlots&&a.every(x=>b.find(y=>y.at===x.at).accept.some(m=>x.accept.includes(m))))throw Error(`Readings overlap in ${level.id}`);
+      }
+    }
+    return true;
+  }
   for(const level of data.levels){
     if(ids.has(level.id))throw Error(`Duplicate stage ${level.id}`);ids.add(level.id);
     if(!Array.isArray(level.choices)||level.choices.length!==2)throw Error(`Two outcomes required in ${level.id}`);
@@ -56,13 +107,31 @@ function newGame(data,seed,options={}){
   const settings={...DEFAULT_RULES,...(data.settings??{})};
   const prelude=(options.prelude??[]).filter(h=>h?.valid).map(h=>({stageId:h.stageId,choiceId:h.choiceId,stageTitle:h.stageTitle,valid:true}));
   return {seed:safe,chapter:data.id??'royal',order:generateOrder(data.id&&data.id!=='royal'?`${safe}/${data.id}`:safe,data),settings,round:0,phase:'editing',
-    selectedPosition:null,selectedMark:marksOf(data)[0],selectedChoiceId:null,prelude,
+    selectedPosition:null,selectedMark:marksOf(data)[0],selectedChoiceId:null,placements:[],prelude,
     chaos:settings.initialChaos,score:0,riskyCount:0,cautiousCount:0,history:[],invalidAttempts:0,finalBonus:0,endingReason:null};
 }
 function getCurrentLevel(game,data){return data.levels[game.order[game.round]];}
 function findChoice(level,mark,position){return level?.choices.find(c=>placementsOf(c).some(([m,p])=>m===mark&&p===position))||null;}
 function currentMark(game){return game.selectedMark??COMMA;}
-function getCurrentChoice(game,data){return findChoice(getCurrentLevel(game,data),currentMark(game),game.selectedPosition);}
+function getCurrentChoice(game,data){
+  const level=getCurrentLevel(game,data);
+  return isMulti(data)?findMultiChoice(level,game.placements??[]):findChoice(level,currentMark(game),game.selectedPosition);
+}
+/** Multi-mark: click a slot with the current mark. Same mark again removes it; another mark replaces it;
+ *  an empty slot is filled only while fewer than N marks are placed (otherwise the game is unchanged). */
+function togglePlacement(game,data,p){
+  if(game.phase!=='editing'||!isMulti(data))return game;
+  const level=getCurrentLevel(game,data),mark=currentMark(game),placed=game.placements??[];
+  if(!level||!Number.isInteger(p)||p<0||p>Array.from(level.raw).length)return game;
+  const existing=placed.find(x=>x.position===p);
+  let next;
+  if(existing)next=existing.mark===mark?placed.filter(x=>x!==existing):placed.map(x=>x===existing?{position:p,mark}:x);
+  else if(placed.length<marksPerDoc(data))next=[...placed,{position:p,mark}];
+  else return game;
+  next=sortPlaced(next);
+  return {...game,placements:next,selectedChoiceId:findMultiChoice(level,next)?.id??null};
+}
+function clearPlacements(game){return game.phase!=='editing'?game:{...game,placements:[],selectedPosition:null,selectedChoiceId:null};}
 function selectPosition(game,data,p){
   if(game.phase!=='editing')return game;
   const level=getCurrentLevel(game,data);
@@ -71,12 +140,14 @@ function selectPosition(game,data,p){
 }
 function selectMark(game,data,mark){
   if(game.phase!=='editing'||!marksOf(data).includes(mark))return game;
+  if(isMulti(data))return {...game,selectedMark:mark};
   const level=getCurrentLevel(game,data);
   return {...game,selectedMark:mark,selectedChoiceId:game.selectedPosition===null?null:findChoice(level,mark,game.selectedPosition)?.id??null};
 }
 function selectChoice(game,data,id){
   const c=getCurrentLevel(game,data)?.choices.find(x=>x.id===id);
   if(!c||game.phase!=='editing')return game;
+  if(isMulti(data)){const placed=sortPlaced(primaryPlacements(c));return {...game,placements:placed,selectedMark:placed.at(-1).mark,selectedChoiceId:c.id};}
   return selectPosition(selectMark(game,data,choiceMark(c)),data,c.insertAfter);
 }
 const ROYAL_INVALID_LINES=[
@@ -87,20 +158,24 @@ const ROYAL_INVALID_LINES=[
 ];
 function invalidHeadline(game,data){
   const lines=data?.invalidLines?.length?data.invalidLines:ROYAL_INVALID_LINES;
+  if(isMulti(data))return lines[hashSeed(`${game.seed}/${game.round}/${(game.placements??[]).map(p=>p.mark+p.position).join('')}`)%lines.length];
   const mark=currentMark(game),markKey=mark===COMMA?'':`/${mark}`;
   return lines[hashSeed(`${game.seed}/${game.round}/${game.selectedPosition}${markKey}`)%lines.length];
 }
 function judgeChoice(game,data){
-  if(game.phase!=='editing'||game.selectedPosition===null)return game;
+  const multi=isMulti(data);
+  if(game.phase!=='editing')return game;
+  if(multi?(game.placements??[]).length!==marksPerDoc(data):game.selectedPosition===null)return game;
   const level=getCurrentLevel(game,data),choice=getCurrentChoice(game,data);
   if(!level)return game;
-  const mark=currentMark(game);
-  const punctuated=insertMark(level.raw,game.selectedPosition,mark);
+  const mark=multi?null:currentMark(game);
+  const placed=multi?sortPlaced(game.placements):null;
+  const punctuated=multi?insertMarks(level.raw,placed):insertMark(level.raw,game.selectedPosition,mark);
   if(!choice){
     const [headline,scene,afterword]=invalidHeadline(game,data);
     const nextChaos=Math.max(0,game.chaos+game.settings.invalidChaosPenalty);
     const terminal=nextChaos>=game.settings.chaosLoseAt?'chaos':null;
-    const entry={stageId:level.id,stageTitle:level.title,original:level.raw,choiceId:null,position:game.selectedPosition,mark,punctuated,
+    const entry={stageId:level.id,stageTitle:level.title,original:level.raw,choiceId:null,position:game.selectedPosition,mark,...(multi?{placements:placed}:{}),punctuated,
       meaning:data.invalidMeaning??'標點位置無法形成可執行的政策，官員無從判斷誰該做什麼。',headline,scene,afterword,consequence:`${scene} ${afterword}`,
       chaosDelta:game.settings.invalidChaosPenalty,chaosBefore:game.chaos,chaosAfter:nextChaos,
       valid:false,riskier:null,scoreEarned:0};
@@ -112,7 +187,7 @@ function judgeChoice(game,data){
   const points=riskier?game.settings.pointsRisky:game.settings.pointsCautious;
   const nextChaos=Math.max(0,game.chaos+choice.chaosDelta);
   const terminal=nextChaos>=game.settings.chaosLoseAt?'chaos':game.round===game.settings.rounds-1?'victory':null;
-  const entry={stageId:level.id,stageTitle:level.title,original:level.raw,choiceId:choice.id,position:game.selectedPosition,mark,punctuated,
+  const entry={stageId:level.id,stageTitle:level.title,original:level.raw,choiceId:choice.id,position:game.selectedPosition,mark,...(multi?{placements:placed}:{}),punctuated,
     meaning:choice.meaning,headline:choice.headline,scene:choice.scene,afterword:choice.afterword,consequence:choice.consequence,
     chaosDelta:choice.chaosDelta,chaosBefore:game.chaos,chaosAfter:nextChaos,valid:true,riskier,scoreEarned:points};
   return {...game,phase:'judgment',history:[...game.history,entry],chaos:nextChaos,score:game.score+points,
@@ -126,7 +201,7 @@ function advanceGame(game){
   }
   if(game.endingReason)return {...game,phase:'defeat'};
   const last=game.history.at(-1);
-  return {...game,round:game.round+(last.valid?1:0),phase:'editing',selectedPosition:null,selectedChoiceId:null};
+  return {...game,round:game.round+(last.valid?1:0),phase:'editing',selectedPosition:null,selectedChoiceId:null,placements:[]};
 }
 function canSurviveAll(data){
   const limits={...DEFAULT_RULES,...(data.settings??{})};
@@ -134,4 +209,4 @@ function canSurviveAll(data){
   for(const l of data.levels){chaos=Math.max(0,chaos+Math.min(...l.choices.map(c=>c.chaosDelta)));if(chaos>=limits.chaosLoseAt)return false;}
   return true;
 }
-export {COMMA,QUESTION,EXCLAIM,insertComma,insertMark,marksOf,placementsOf,validateGameData,hashSeed,createRng,generateOrder,newGame,getCurrentLevel,getCurrentChoice,selectPosition,selectMark,selectChoice,judgeChoice,advanceGame,canSurviveAll};
+export {marksPerDoc,isMulti,insertMarks,readingAlternatives,togglePlacement,clearPlacements,COMMA,QUESTION,EXCLAIM,insertComma,insertMark,marksOf,placementsOf,validateGameData,hashSeed,createRng,generateOrder,newGame,getCurrentLevel,getCurrentChoice,selectPosition,selectMark,selectChoice,judgeChoice,advanceGame,canSurviveAll};

@@ -10,11 +10,17 @@ ROYAL_PICK={'L08':'B','L04':'B','L07':'B'}   # sets up cross-chapter facts: prin
 GUILD_PICK={'G02':'B','G03':'B'}             # 收禮合法 (國王的中獎通知)、會長催收 (一箱簽名照)
 low=lambda l: min(l['choices'],key=lambda c:c['chaosDelta'])
 
-async def place(page,choice):
-    mark=choice.get('mark','，')
-    if await page.locator('.mark-picker').count():
-        await page.click(f'[data-action=mark][data-mark="{mark}"]')
-    await page.click(f'[data-action=select][data-position="{choice["insertAfter"]}"]')
+def steps(choice):
+    # v4.4: chapter 2/3 readings are several placements; chapter 1 is a single comma.
+    return [(p['mark'],p['at']) for p in choice['placements']] if 'placements' in choice else [(choice.get('mark','，'),choice['insertAfter'])]
+
+async def place(page,choice,tap=False):
+    for mark,at in steps(choice):
+        if await page.locator('.mark-picker').count():
+            loc=page.locator(f'[data-action=mark][data-mark="{mark}"]')
+            await (loc.tap() if tap else loc.click())
+        loc=page.locator(f'[data-action=select][data-position="{at}"]')
+        await (loc.tap() if tap else loc.click())
 
 async def play(page,table,picks,log):
     while await page.locator('.stage-title').count():
@@ -65,7 +71,7 @@ async def run():
         assert '國王送來的中獎通知' in story and '王宮' in story
         report['continue']={'royal':royal_log,'guild':guild_log}
 
-        # 2) Direct start from the menu: no prelude; keyboard switches marks; bad question mark is rejected.
+        # 2) Direct start from the menu: no prelude; keyboard switches marks; exactly two marks are required.
         await page.goto(URL); await page.fill('#seed-input','V42-DIRECT'); await page.click('[data-action=guild-start]')
         first=await page.locator('.court-briefing').inner_text()
         assert '王宮' not in first and '借調' in first,first
@@ -73,19 +79,26 @@ async def run():
         await page.keyboard.press('2')
         assert await page.get_attribute('[data-action=mark][data-mark="？"]','aria-checked')=='true'
         end=len(level['raw'])
+        await page.click('[data-action=select][data-position="0"]')
+        assert await page.locator('[data-action=judge]').is_disabled(),'one mark must not be enough'
+        assert '1</b> / 2' in await page.locator('.mark-count').inner_html()
         await page.click(f'[data-action=select][data-position="{end}"]')
         preview=await page.locator('.punctuation-preview strong').inner_text()
-        assert preview==level['raw']+'？',preview
-        valid_end=any(c.get('mark')=='？' and c['insertAfter']==end for c in level['choices'])
+        assert preview=='？'+level['raw']+'？',preview
+        await page.click('[data-action=select][data-position="2"]')  # a third mark is refused
+        assert await page.locator('.comma-slot--chosen').count()==2
+        await page.click('[data-action=select][data-position="0"]')  # same mark again removes it
+        assert await page.locator('.comma-slot--chosen').count()==1
+        await page.click('[data-action=select][data-position="0"]')
         await page.click('[data-action=judge]')
         rejected=await page.locator('.judgment-card--invalid').count()==1
-        assert rejected!=valid_end,(level['id'],rejected,valid_end)
+        assert rejected,(level['id'],'？ at the very start is never a valid reading')
         await page.keyboard.press('1')  # ignored outside editing
-        report['direct']={'stage':level['id'],'endQuestionValid':valid_end,'rejected':rejected}
+        report['direct']={'stage':level['id'],'rejected':rejected}
         # Seven misplaced marks bankrupt the guild.
         await page.goto(URL); await page.fill('#seed-input','V42-BANKRUPT'); await page.click('[data-action=guild-start]')
         for _ in range(7):
-            await page.click('[data-action=mark][data-mark="？"]'); await page.click('[data-position="0"]')
+            await page.click('[data-action=mark][data-mark="？"]'); await page.click('[data-position="0"]'); await page.click('[data-position="1"]')
             await page.click('[data-action=judge]'); await page.click('[data-action=advance]')
         body=await page.locator('body').inner_text()
         assert '你讓商會倒閉了' in body and '已執行 0 份合約、退件 7 次' in body,body[:300]
@@ -101,8 +114,7 @@ async def run():
         assert all(b['height']>=44 for b in boxes),boxes
         level=GUILD[await mobile.locator('.stage-title').inner_text()]
         c=level['choices'][0]
-        await mobile.locator(f'[data-action=mark][data-mark="{c.get("mark","，")}"]').tap()
-        await mobile.locator(f'[data-action=select][data-position="{c["insertAfter"]}"]').tap()
+        await place(mobile,c,tap=True)
         stamp=await mobile.locator('[data-action=judge]').bounding_box()
         assert stamp['y']+stamp['height']<=844,stamp
         assert not await mobile.evaluate('document.documentElement.scrollWidth>innerWidth'),'game overflow'

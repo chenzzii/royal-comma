@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {COMMA,QUESTION,validateGameData,canSurviveAll,newGame,getCurrentLevel,selectPosition,selectMark,selectChoice,judgeChoice,advanceGame,generateOrder,placementsOf} from '../src/engine.mjs';
+import {COMMA,QUESTION,validateGameData,canSurviveAll,newGame,getCurrentLevel,selectPosition,selectMark,selectChoice,judgeChoice,advanceGame,generateOrder,readingAlternatives,togglePlacement,clearPlacements,marksPerDoc} from '../src/engine.mjs';
 import {WORLD_EFFECTS,INITIAL_FACTS,traceWorld,latestReactions,courtBriefing} from '../src/world.mjs';
 import {GUILD_WORLD,GUILD_CHAINS,GUILD_BRIEFINGS,GUILD_EFFECTS,GUILD_INITIAL,makeGuildChronicle} from '../src/guild.mjs';
 const royal=JSON.parse(fs.readFileSync(new URL('../content/levels.json',import.meta.url)));
@@ -12,51 +12,52 @@ const entry=key=>{const [stageId,choiceId]=key.split(':');const l=level(stageId)
 const hist=keys=>keys.map(entry);
 const fired=(keys,prelude=[])=>traceWorld(hist(keys),GUILD_WORLD,hist(prelude)).steps.flatMap(s=>s.reactions.map(r=>r.id));
 const at=(g,id)=>({...g,round:g.order.indexOf(guild.levels.findIndex(l=>l.id===id))});
-const play=(g,mark,pos)=>judgeChoice(selectPosition(selectMark(g,guild,mark),guild,pos),guild);
+const place=(g,pairs)=>pairs.reduce((x,[m,p])=>togglePlacement(selectMark(x,guild,m),guild,p),g);
+const play=(g,pairs)=>judgeChoice(place(g,pairs),guild);
 const ORDERS=Array.from({length:30},(_,i)=>generateOrder(`G-${i}/guild`,guild));
 const combo=(bits,order)=>order.map(i=>`${guild.levels[i].id}:${guild.levels[i].choices[(bits>>i)&1].id}`);
 const PRELUDES=[[],['L08:B','L04:B','L07:B'],['L01:B','L05:A','L04:A','L08:A'],['L01:A','L02:B','L03:B','L04:B','L05:A','L06:B','L07:B','L08:B']];
 
-test('chapter 2 data: six contracts, comma or question mark, survivable, varied reading types',()=>{
+test('chapter 2 data: six contracts, exactly two marks each, survivable, varied structures',()=>{
   assert.equal(validateGameData(guild),true);
   assert.equal(guild.levels.length,6);
+  assert.equal(marksPerDoc(guild),2);
   assert.deepEqual(guild.marks,[COMMA,QUESTION]);
   assert.equal(canSurviveAll(guild),true);
-  const kinds=guild.levels.map(l=>{const [a,b]=l.choices;
-    return a.insertAfter===b.insertAfter?'same-slot-different-mark':a.mark===QUESTION&&b.mark===QUESTION?'two-questions':a.mark!==b.mark?'comma-vs-question':'two-commas';});
-  for(const k of ['same-slot-different-mark','two-questions','comma-vs-question','two-commas'])assert.ok(kinds.includes(k),`missing ${k}: ${kinds}`);
-  const riskyMarks=new Set(guild.levels.map(l=>{const [a,b]=l.choices;return (a.chaosDelta>b.chaosDelta?a:b).mark;}));
-  assert.deepEqual([...riskyMarks].sort(),[COMMA,QUESTION].sort(),'the riskier reading must not always use the same mark');
-  for(const l of guild.levels)for(const c of l.choices)assert.ok(!c.rendered.endsWith(COMMA));
+  for(const l of guild.levels)for(const c of l.choices)for(const alt of readingAlternatives(c))assert.equal(alt.length,2,`${l.id}/${c.id}`);
+  // Readings differ by slot in some contracts and only by mark type in others.
+  const diffBySlot=guild.levels.filter(l=>{const [a,b]=l.choices.map(c=>c.placements.map(p=>p.at).join());return a!==b;});
+  assert.ok(diffBySlot.length>=2&&diffBySlot.length<=4,diffBySlot.map(l=>l.id));
+  // At least one contract needs BOTH marks to be different between the readings.
+  assert.ok(guild.levels.some(l=>{const [a,b]=l.choices;return a.placements.every((p,i)=>p.mark!==b.placements[i].mark);}));
+  const risky=new Set(guild.levels.map(l=>{const [a,b]=l.choices;return (a.chaosDelta>b.chaosDelta?a:b).rendered.includes(QUESTION);}));
+  assert.equal(risky.size,2,'riskier reading sometimes has a question mark, sometimes not');
 });
 
-test('mark choice: same slot with a different mark is a different reading; aliases execute their reading',()=>{
-  let g=at(newGame(guild,'MARKS'),'G06');
-  const comma=play(g,COMMA,6),question=play(g,QUESTION,6);
-  assert.equal(comma.history[0].choiceId,'A');assert.equal(question.history[0].choiceId,'B');
-  assert.equal(question.history[0].punctuated,'會長從不說謊？全城都知道');
-  assert.equal(question.history[0].mark,QUESTION);
-  g=at(newGame(guild,'ALIAS'),'G01');
-  const alias=play(g,QUESTION,5),primary=play(g,COMMA,5);
-  assert.equal(alias.history[0].choiceId,'A');assert.equal(primary.history[0].choiceId,'A');
-  assert.equal(alias.history[0].punctuated,'會長退休了？沒人反對');
-  const endQuestion=play(at(newGame(guild,'END'),'G06'),QUESTION,11);
-  assert.equal(endQuestion.history[0].valid,false);assert.equal(endQuestion.chaos,1);
-  // Changing the mark after choosing a slot re-evaluates the same slot.
-  let s=selectPosition(at(newGame(guild,'SWAP'),'G03'),guild,8);
-  assert.equal(s.selectedMark,COMMA,'chapter 2 starts with the comma selected');
-  assert.equal(s.selectedChoiceId,'A');
-  s=selectMark(s,guild,QUESTION);assert.equal(s.selectedChoiceId,'B');
-  s=selectMark(s,guild,COMMA);assert.equal(s.selectedChoiceId,'A');
-  // Chapter 1 has only commas: a question mark cannot be selected there.
-  const r=newGame(royal,'ROYAL-ONLY');assert.equal(selectMark(r,royal,QUESTION),r);
-  assert.equal(r.selectedMark,COMMA);
+test('two marks: both must be right; same slots with a different mark is the other reading; aliases count',()=>{
+  const g=at(newGame(guild,'TWO'),'G05');
+  assert.equal(play(g,[[QUESTION,4],[COMMA,8]]).history[0].choiceId,'A');
+  assert.equal(play(g,[[COMMA,4],[QUESTION,8]]).history[0].choiceId,'B');
+  assert.equal(play(g,[[COMMA,4],[COMMA,8]]).history[0].choiceId,'A','alias');
+  assert.equal(play(g,[[QUESTION,4],[QUESTION,8]]).history[0].valid,false);
+  assert.equal(play(g,[[QUESTION,4],[COMMA,7]]).history[0].valid,false,'one wrong slot is enough to reject');
+  // One mark is not enough to stamp; a third mark cannot be added; clicking again removes.
+  const one=place(g,[[QUESTION,4]]);assert.equal(judgeChoice(one,guild),one);
+  const two=place(g,[[QUESTION,4],[COMMA,8]]);assert.equal(togglePlacement(two,guild,2),two);
+  const removed=togglePlacement(selectMark(two,guild,COMMA),guild,8);assert.equal(removed.placements.length,1);
+  const swapped=togglePlacement(selectMark(two,guild,QUESTION),guild,8);assert.deepEqual(swapped.placements.map(p=>p.mark),[QUESTION,QUESTION]);
+  assert.equal(clearPlacements(two).placements.length,0);
+  const judged=play(g,[[COMMA,8],[QUESTION,4]]);
+  assert.equal(judged.history[0].punctuated,'股東分紅？沒有問題，會長說');
+  assert.equal(advanceGame(judged).placements.length,0);
+  // Chapter 1 is unaffected: still a single comma.
+  const r=newGame(royal,'ROYAL-ONLY');assert.equal(togglePlacement(r,royal,3),r);assert.equal(selectMark(r,royal,QUESTION),r);
 });
 
-test('every placement of every guild reading round-trips through the engine',()=>{
-  for(const l of guild.levels)for(const c of l.choices)for(const [m,p] of placementsOf(c)){
-    const g=play(at(newGame(guild,'RT'),l.id),m,p);
-    assert.equal(g.history[0].choiceId,c.id,`${l.id} ${m}@${p}`);
+test('every alternative of every guild reading round-trips through the engine',()=>{
+  for(const l of guild.levels)for(const c of l.choices)for(const alt of readingAlternatives(c))for(const pick of [0,-1]){
+    const pairs=alt.map(a=>[a.accept.at(pick),a.at]);
+    assert.equal(play(at(newGame(guild,'RT'),l.id),pairs).history[0].choiceId,c.id,`${l.id} ${JSON.stringify(pairs)}`);
   }
 });
 

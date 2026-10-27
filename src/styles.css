@@ -215,3 +215,10 @@
 .chapter-cathedral .stamp-cta--ready::after{border-color:rgba(122,79,160,.55)}
 .mark-picker{flex-wrap:wrap}
 @media (max-width:590px){.mark-option{padding:6px 12px;gap:6px}.mark-option b{font-size:22px}}
+
+/* v4.4: multi-mark documents. */
+.mark-count{display:inline-flex;align-items:center;gap:4px;padding:8px 12px;border-radius:999px;background:#efe0c0;border:1px solid #c3a078;color:#61483a;font-size:13px;font-weight:700}
+.mark-count b{font-size:17px;color:#824452}
+.mark-count--full{background:#e5f1e2;border-color:#5b8a5e;color:#2f6b3a}.mark-count--full b{color:#2f6b3a}
+.comma-slot.comma-slot--chosen{background:#824452;border:1px solid #824452;color:#fff3d3}
+.comma-slot.comma-slot--chosen:hover,.comma-slot.comma-slot--chosen:focus-visible{background:#6b3542;border-color:#f0c060;color:#fff3d3}

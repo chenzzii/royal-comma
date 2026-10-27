@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {COMMA,QUESTION,EXCLAIM,validateGameData,canSurviveAll,newGame,getCurrentLevel,selectPosition,selectMark,selectChoice,judgeChoice,advanceGame,generateOrder,placementsOf} from '../src/engine.mjs';
+import {COMMA,QUESTION,EXCLAIM,validateGameData,canSurviveAll,newGame,getCurrentLevel,selectMark,selectChoice,judgeChoice,advanceGame,generateOrder,readingAlternatives,togglePlacement,marksPerDoc} from '../src/engine.mjs';
 import {WORLD_EFFECTS,INITIAL_FACTS,traceWorld,courtBriefing} from '../src/world.mjs';
 import {GUILD_EFFECTS,GUILD_INITIAL} from '../src/guild.mjs';
 import {CATHEDRAL_WORLD,CATHEDRAL_CHAINS,CATHEDRAL_BRIEFINGS,CATHEDRAL_EFFECTS,CATHEDRAL_INITIAL,makeCathedralChronicle} from '../src/cathedral.mjs';
@@ -13,41 +13,43 @@ const entry=key=>{const [stageId,choiceId]=key.split(':');const l=level(stageId)
 const hist=keys=>keys.map(entry);
 const fired=(keys,prelude=[])=>traceWorld(hist(keys),CATHEDRAL_WORLD,hist(prelude)).steps.flatMap(s=>s.reactions.map(r=>r.id));
 const at=(g,id)=>({...g,round:g.order.indexOf(cath.levels.findIndex(l=>l.id===id))});
-const play=(g,mark,pos)=>judgeChoice(selectPosition(selectMark(g,cath,mark),cath,pos),cath);
+const place=(g,pairs,data=cath)=>pairs.reduce((x,[m,p])=>togglePlacement(selectMark(x,data,m),data,p),g);
+const play=(g,pairs)=>judgeChoice(place(g,pairs),cath);
 const ORDERS=Array.from({length:30},(_,i)=>generateOrder(`C-${i}/cathedral`,cath));
 const combo=(bits,order)=>order.map(i=>`${cath.levels[i].id}:${cath.levels[i].choices[(bits>>i)&1].id}`);
 const PRELUDES=[[],['L01:B','L05:B','L04:A','L07:B'],['G02:B','G06:B','G01:B','G05:A'],
   ['L01:B','L04:A','L05:B','L07:B','G01:B','G02:B','G05:A','G06:B'],['L01:A','L08:B','G03:B','G04:A']];
 
-test('chapter 3 data: six notices, three marks, exclamation matters, survivable',()=>{
+test('chapter 3 data: six notices, exactly three marks each, exclamation matters, survivable',()=>{
   assert.equal(validateGameData(cath),true);
   assert.equal(cath.levels.length,6);
+  assert.equal(marksPerDoc(cath),3);
   assert.deepEqual(cath.marks,[COMMA,QUESTION,EXCLAIM]);
   assert.equal(canSurviveAll(cath),true);
-  const primaryExclaim=cath.levels.filter(l=>l.choices.some(c=>c.mark===EXCLAIM));
-  assert.ok(primaryExclaim.length>=3,'exclamation must be a primary reading in several notices');
-  const pairs=new Set(cath.levels.map(l=>l.choices.map(c=>c.mark).sort().join('')));
-  assert.ok(pairs.size>=4,`mark pairings should vary: ${[...pairs]}`);
-  assert.ok(cath.levels.some(l=>l.choices[0].insertAfter===l.choices[1].insertAfter&&l.choices.some(c=>c.mark===EXCLAIM)),'need a same-slot notice that hinges on ！');
-  const risky=new Set(cath.levels.map(l=>{const [a,b]=l.choices;return (a.chaosDelta>b.chaosDelta?a:b).mark;}));
-  assert.equal(risky.size,3,'riskier reading should use each mark somewhere');
+  for(const l of cath.levels)for(const c of l.choices)for(const alt of readingAlternatives(c))assert.equal(alt.length,3,`${l.id}/${c.id}`);
+  assert.ok(cath.levels.filter(l=>l.choices.some(c=>c.rendered.includes(EXCLAIM))).length>=5,'exclamation should appear in most notices');
+  assert.ok(cath.levels.some(l=>{const [a,b]=l.choices;return a.placements.some((p,i)=>p.at===b.placements[i]?.at&&!(p.accept??[p.mark]).includes(b.placements[i].mark)&&[p.mark,b.placements[i].mark].includes(EXCLAIM));}),'need a slot where ！ vs another mark decides the reading');
+  // How many marks really decide between the readings (slot differs, or the accepted marks do not overlap).
+  const deciding=l=>{const [a,b]=l.choices.map(c=>c.placements);return a.filter(p=>{const q=b.find(x=>x.at===p.at);return !q||!(p.accept??[p.mark]).some(m=>(q.accept??[q.mark]).includes(m));}).length;};
+  assert.ok(cath.levels.every(l=>deciding(l)>=1));
+  assert.ok(cath.levels.some(l=>deciding(l)>=2),'at least one notice hinges on two marks at once');
   for(const l of cath.levels)assert.ok(!royal.levels.some(r=>r.raw===l.raw)&&!guild.levels.some(g=>g.raw===l.raw));
 });
 
-test('exclamation vs comma at the same slot are different readings; aliases execute their reading',()=>{
+test('three marks: ！ vs ， at the same slot decides; every alternative round-trips; earlier chapters unaffected',()=>{
   const fire=at(newGame(cath,'FIRE'),'C02');
-  assert.equal(play(fire,COMMA,5).history[0].choiceId,'A');
-  assert.equal(play(fire,EXCLAIM,5).history[0].choiceId,'B');
-  assert.equal(play(fire,QUESTION,5).history[0].valid,false);
-  const pope=at(newGame(cath,'POPE'),'C05');
-  assert.equal(play(pope,EXCLAIM,8).history[0].choiceId,'A');
-  assert.equal(play(pope,QUESTION,8).history[0].choiceId,'B');
-  assert.equal(play(pope,EXCLAIM,8).history[0].punctuated,'教宗下週要退位了！');
-  for(const l of cath.levels)for(const c of l.choices)for(const [m,p] of placementsOf(c))
-    assert.equal(play(at(newGame(cath,'RT'),l.id),m,p).history[0].choiceId,c.id,`${l.id} ${m}@${p}`);
-  // Chapters 1 and 2 cannot use the exclamation mark.
+  assert.equal(play(fire,[[COMMA,3],[COMMA,8],[QUESTION,14]]).history[0].choiceId,'A');
+  assert.equal(play(fire,[[COMMA,3],[EXCLAIM,8],[QUESTION,14]]).history[0].choiceId,'B');
+  assert.equal(play(fire,[[COMMA,3],[EXCLAIM,8],[EXCLAIM,14]]).history[0].valid,false);
+  const two=place(fire,[[COMMA,3],[COMMA,8]]);assert.equal(judgeChoice(two,cath),two,'needs all three');
+  const full=place(fire,[[COMMA,3],[COMMA,8],[QUESTION,14]]);assert.equal(togglePlacement(full,cath,1),full,'no fourth mark');
+  for(const l of cath.levels)for(const c of l.choices)for(const alt of readingAlternatives(c))for(const pick of [0,-1]){
+    const pairs=alt.map(a=>[a.accept.at(pick),a.at]);
+    assert.equal(play(at(newGame(cath,'RT'),l.id),pairs).history[0].choiceId,c.id,`${l.id} ${JSON.stringify(pairs)}`);
+  }
   const r=newGame(royal,'R'),g=newGame(guild,'G');
   assert.equal(selectMark(r,royal,EXCLAIM),r);assert.equal(selectMark(g,guild,EXCLAIM),g);
+  assert.equal(marksPerDoc(royal),1);
 });
 
 test('chapter 3 plays to victory and to schism',()=>{
@@ -125,6 +127,6 @@ test('chapter 3 chronicle: fired chains in order, prelude-aware opening, fatal n
   assert.deepEqual(story.connections.map(c=>c.title),traceWorld(game.history,CATHEDRAL_WORLD,game.prelude).steps.flatMap(s=>s.reactions.map(r=>r.title)));
   assert.ok(story.connections.some(c=>c.title==='熊公主扶起教宗')&&story.connections.some(c=>c.title==='可以轉送的贖罪'));
   assert.equal(story.title,'《跪完就退位》');assert.match(story.opening,/商會/);
-  const lost=makeCathedralChronicle({phase:'defeat',endingReason:'chaos',seed:'L',history:[{stageId:'C02',valid:false,choiceId:null,mark:QUESTION,position:5,punctuated:'聖殿著火了？沒有人知道'}],prelude:[],chaos:7,invalidAttempts:7,riskyCount:0});
-  assert.match(lost.epilogue,/聖殿著火了？沒有人知道/);assert.match(lost.title,/退件/);
+  const lost=makeCathedralChronicle({phase:'defeat',endingReason:'chaos',seed:'L',history:[{stageId:'C02',valid:false,choiceId:null,placements:[],punctuated:'修女說？聖殿著火了，沒有人知道吧？'}],prelude:[],chaos:7,invalidAttempts:7,riskyCount:0});
+  assert.match(lost.epilogue,/修女說？聖殿著火了，沒有人知道吧？/);assert.match(lost.title,/退件/);
 });

@@ -14,9 +14,10 @@ async def play(page,table,log=None):
     while await page.locator('.stage-title').count():
         level=table[await page.locator('.stage-title').inner_text()]
         choice=next((c for c in level['choices'] if c['id']==PICKS.get(level['id'])),None) or low(level)
-        if await page.locator('.mark-picker').count():
-            await page.click(f'[data-action=mark][data-mark="{choice.get("mark","，")}"]')
-        await page.click(f'[data-action=select][data-position="{choice["insertAfter"]}"]')
+        for mark,at in ([(p['mark'],p['at']) for p in choice['placements']] if 'placements' in choice else [(choice.get('mark','，'),choice['insertAfter'])]):
+            if await page.locator('.mark-picker').count():
+                await page.click(f'[data-action=mark][data-mark="{mark}"]')
+            await page.click(f'[data-action=select][data-position="{at}"]')
         await page.click('[data-action=judge]')
         quote=await page.locator('.judgment-quote').inner_text()
         assert quote==choice['rendered'],(quote,choice['rendered'])
@@ -61,11 +62,15 @@ async def run():
         assert await page.get_attribute('[data-action=mark][data-mark="！"]','aria-checked')=='true'
         await page.click('[data-action=select][data-position="0"]')
         assert (await page.locator('.punctuation-preview strong').inner_text()).startswith('！')
+        await page.keyboard.press('1'); await page.click('[data-action=select][data-position="2"]')
+        assert await page.locator('[data-action=judge]').is_disabled(),'two marks must not be enough in chapter 3'
+        assert '2</b> / 3' in await page.locator('.mark-count').inner_html()
         report['direct']={'firstBriefing':first}
         # Seven misplaced marks split the church.
         await page.goto(URL); await page.fill('#seed-input','V43-SCHISM'); await page.click('[data-action=cathedral-start]')
         for _ in range(7):
-            await page.click('[data-action=mark][data-mark="！"]'); await page.click('[data-position="0"]')
+            await page.click('[data-action=mark][data-mark="！"]')
+            for pos in (0,1,2): await page.click(f'[data-position="{pos}"]')
             await page.click('[data-action=judge]'); await page.click('[data-action=advance]')
         body=await page.locator('body').inner_text()
         assert '你讓教會分裂了' in body and '已發布 0 份公告、退件 7 次' in body,body[:300]
@@ -84,8 +89,9 @@ async def run():
             assert all(b['height']>=44 and b['x']>=0 and b['x']+b['width']<=w for b in boxes),boxes
             level=CATH[await m.locator('.stage-title').inner_text()]
             c=level['choices'][0]
-            await m.locator(f'[data-action=mark][data-mark="{c["mark"]}"]').tap()
-            await m.locator(f'[data-action=select][data-position="{c["insertAfter"]}"]').tap()
+            for p in c['placements']:
+                await m.locator(f'[data-action=mark][data-mark="{p["mark"]}"]').tap()
+                await m.locator(f'[data-action=select][data-position="{p["at"]}"]').tap()
             st=await m.locator('[data-action=judge]').bounding_box()
             assert st['y']+st['height']<=844
             assert not await m.evaluate('document.documentElement.scrollWidth>innerWidth'),f'{w} game overflow'

@@ -60,19 +60,19 @@
       {
         "stage": "G01",
         "choice": "A",
-        "quote": "會長退休了，沒人反對",
+        "quote": "股東說，會長退休了，沒人反對",
         "chains": []
       },
       {
         "stage": "G06",
         "choice": "A",
-        "quote": "會長從不說謊，全城都知道",
+        "quote": "招牌寫著，會長從不說謊，全城都知道",
         "chains": []
       },
       {
         "stage": "G03",
         "choice": "B",
-        "quote": "王子欠的錢不用還？會長說",
+        "quote": "王子欠的錢，不用還？會長說了算",
         "chains": [
           "一箱簽名照"
         ]
@@ -80,7 +80,7 @@
       {
         "stage": "G02",
         "choice": "B",
-        "quote": "誰說會長不能收禮物？",
+        "quote": "帳房問，誰說會長不能收禮物？",
         "chains": [
           "國王送來的中獎通知"
         ]
@@ -88,7 +88,7 @@
       {
         "stage": "G04",
         "choice": "B",
-        "quote": "稅務官不查會長，查帳房",
+        "quote": "稅務官不查會長，查帳房嗎？",
         "chains": [
           "皇室搬的箱子不能查"
         ]
@@ -96,28 +96,27 @@
       {
         "stage": "G05",
         "choice": "B",
-        "quote": "股東分紅沒有問題？",
+        "quote": "股東分紅，沒有問題？會長說",
         "chains": []
       }
     ]
   },
   "direct": {
     "stage": "G05",
-    "endQuestionValid": true,
-    "rejected": false
+    "rejected": true
   },
   "bankruptcy": true,
   "mobile": {
     "markButtons": [
       {
         "x": 107.984375,
-        "y": 660.28125,
+        "y": 701.875,
         "width": 82.015625,
         "height": 44
       },
       {
         "x": 200,
-        "y": 660.28125,
+        "y": 701.875,
         "width": 82.015625,
         "height": 44
       }
