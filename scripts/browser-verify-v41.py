@@ -22,6 +22,9 @@ async def start(page,seed):
     await page.goto((ROOT/'dist/index.html').as_uri(),wait_until='load')
     await page.fill('#seed-input',seed)
     await page.click('[data-action=start]')
+    # v4.6: the chapter title card (a cutscene) plays first; geometry checks wait for it to finish.
+    await page.wait_for_selector('.cutscene--chapter',state='detached')
+    await page.wait_for_timeout(600)
 
 async def play_to_end(page,picker,log=None):
     while await page.locator('.stage-title').count():

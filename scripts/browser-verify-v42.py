@@ -110,6 +110,7 @@ async def run():
         await mobile.goto(URL)
         assert not await mobile.evaluate('document.documentElement.scrollWidth>innerWidth'),'menu overflow'
         await mobile.fill('#seed-input','V42-MOBILE'); await mobile.locator('[data-action=guild-start]').tap()
+        await mobile.wait_for_selector('.cutscene--chapter',state='detached'); await mobile.wait_for_timeout(600)  # v4.6 title card
         boxes=[await b.bounding_box() for b in await mobile.locator('[data-action=mark]').all()]
         assert all(b['height']>=44 for b in boxes),boxes
         level=GUILD[await mobile.locator('.stage-title').inner_text()]

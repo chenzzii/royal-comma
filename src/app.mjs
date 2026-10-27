@@ -28,6 +28,7 @@ import {CATHEDRAL_WORLD, makeCathedralChronicle} from './cathedral.mjs';
   let lastSeed = String(pref.lastSeed || 'ROYAL-001');
   let seedDraft = lastSeed;
   let stageViewKey = '';
+  let cut = null; // v4.6: one-shot cutscene shown on the next render (chapter card, stamp slam, finale)
   let audioCtx = null;
   let musicPlayer = null; // <audio> fallback only
   let musicVolume = Number.isFinite(Number(pref.musicVolume)) ? Math.min(1,Math.max(0,Number(pref.musicVolume))) : 0.45;
@@ -60,6 +61,7 @@ import {CATHEDRAL_WORLD, makeCathedralChronicle} from './cathedral.mjs';
     persist();
     sound('start');
     startMusic();
+    cut={type:'chapter',chapter,carried:prelude.length>0};
     render(true);
   }
   // All audio is original and generated locally. Music starts only following user interaction.
@@ -394,10 +396,25 @@ import {CATHEDRAL_WORLD, makeCathedralChronicle} from './cathedral.mjs';
     const el=chosen||target;
     if(el&&!el.disabled)el.focus({preventScroll:true});
   }
+  // v4.6 cutscenes: pure CSS, never cover the answer before stamping, never wait for input.
+  const CUT_TITLES = {royal:['第一章','國王的遺囑只有一個逗號','每份聖旨放 1 個逗號'], guild:['第二章','會長的合約少了兩個符號','每份合約放 2 個符號：，？'], cathedral:['第三章','教宗的公告少了三個語氣','每份公告放 3 個符號：，？！']};
+  function cutscene() {
+    if (!cut) return '';
+    if (cut.type==='chapter') {
+      const [no,title,rule]=CUT_TITLES[cut.chapter];
+      return `<div class="cutscene cutscene--chapter chapter-${cut.chapter}" data-action="skip-cut" aria-hidden="true"><div class="cut-card"><div class="cut-insignia">${CHAPTERS[cut.chapter].insignia}</div><div class="cut-no">${no}${cut.carried?' · 前情延續':''}</div><div class="cut-title">${title}</div><div class="cut-rule">${rule}</div><div class="cut-marks"><span>，</span><span>？</span><span>！</span></div></div></div>`;
+    }
+    if (cut.type==='stamp') return `<div class="cutscene cutscene--stamp ${cut.valid?'':'cutscene--void'}" aria-hidden="true"><div class="cut-stamp"><span>${cut.valid?'准':'退'}</span></div></div>`;
+    const marks=['，','？','！'];
+    const bits=Array.from({length:28},(_,i)=>`<i style="--x:${(i*37)%100}%;--d:${((i*53)%17)/10}s;--t:${2.2+((i*29)%13)/10}s;--r:${(i*71)%360}deg">${marks[i%3]}</i>`).join('');
+    return `<div class="cutscene cutscene--finale ${cut.won?'':'cutscene--lose'}" aria-hidden="true">${bits}</div>`;
+  }
   function render(resetScroll=false) {
     const focus = resetScroll ? null : focusDescriptor();
     const key = state ? `${state.phase}-${state.round}` : 'menu';
-    root.innerHTML = `${topbar()}${state ? state.phase==='editing'?gameplay():state.phase==='judgment'?judgment():ending():menu()}<footer class="site-footer">© 皇家文書局　·　所有人物與政變均屬虛構　·　原創網頁遊戲 v4.4</footer>${help()}<div class="toast" role="status" aria-live="polite" id="toast"></div>`;
+    root.innerHTML = `${topbar()}${state ? state.phase==='editing'?gameplay():state.phase==='judgment'?judgment():ending():menu()}<footer class="site-footer">© 皇家文書局　·　所有人物與政變均屬虛構　·　原創網頁遊戲 v4.6</footer>${help()}<div class="toast" role="status" aria-live="polite" id="toast"></div>${cutscene()}`;
+    if (key !== stageViewKey) root.querySelector('main')?.classList.add(...(cut?.type==='stamp'?['scene-in','scene-in--stamp']:['scene-in']));
+    cut = null;
     if (resetScroll || key !== stageViewKey) window.scrollTo({top:0,behavior:'instant'});
     stageViewKey = key;
     restoreFocus(focus);
@@ -406,7 +423,7 @@ import {CATHEDRAL_WORLD, makeCathedralChronicle} from './cathedral.mjs';
     const wasCoaching=coaching();
     state=judgeChoice(state,DATA());
     if(wasCoaching){tutorial[state.chapter]=true;coachJudgment=true;persist();}
-    sound('stamp');if(!state.history.at(-1).valid)sound('confusion');render(true);
+    sound('stamp');if(!state.history.at(-1).valid)sound('confusion');cut={type:'stamp',valid:state.history.at(-1).valid};render(true);
     coachJudgment=false;
   }
   let toastTimeout;
@@ -424,10 +441,12 @@ import {CATHEDRAL_WORLD, makeCathedralChronicle} from './cathedral.mjs';
       const out=document.getElementById('music-volume-value'); if(out) out.textContent=`${event.target.value}%`;
     }
   });
+  root.addEventListener('animationend',event=>{if(event.target.classList?.contains('cutscene'))event.target.remove();});
   root.addEventListener('click',event=> {
     const target=event.target.closest('[data-action]');
     if (!target) return;
     const action=target.dataset.action;
+    if(action==='skip-cut'){target.remove();return;}
     if(action==='help'){helpOpen=true;render();setTimeout(()=>root.querySelector('.modal-close')?.focus(),0);return;}
     if(action==='close-help'){
       if(target.classList.contains('modal-backdrop') && event.target !== target) return;
@@ -508,7 +527,7 @@ import {CATHEDRAL_WORLD, makeCathedralChronicle} from './cathedral.mjs';
       stampNow();return;
     }
     if(action==='advance' && state?.phase==='judgment'){
-      state=advanceGame(state);sound(state.phase==='victory'?'win':state.phase==='defeat'?'fail':'start');render(true);return;
+      state=advanceGame(state);sound(state.phase==='victory'?'win':state.phase==='defeat'?'fail':'start');if(state.phase==='victory'||state.phase==='defeat')cut={type:'finale',won:state.phase==='victory'};render(true);return;
     }
   });
   document.addEventListener('keydown',event=>{
@@ -536,7 +555,7 @@ import {CATHEDRAL_WORLD, makeCathedralChronicle} from './cathedral.mjs';
       if(markKey&&multiMark()){state=selectMark(state,DATA(),markKey);sound('choose');render();event.preventDefault();return;}
       if(event.key==='Enter' && (isMulti(DATA())?(state.placements??[]).length===marksPerDoc(DATA()):state.selectedPosition!==null)){stampNow();event.preventDefault();}
     }else if(state.phase==='judgment' && event.key==='Enter'){
-      state=advanceGame(state);sound(state.phase==='victory'?'win':state.phase==='defeat'?'fail':'start');render(true);event.preventDefault();
+      state=advanceGame(state);sound(state.phase==='victory'?'win':state.phase==='defeat'?'fail':'start');if(state.phase==='victory'||state.phase==='defeat')cut={type:'finale',won:state.phase==='victory'};render(true);event.preventDefault();
     }
   });
   document.addEventListener('visibilitychange',()=>{if(document.hidden){stopMusic();if(audioCtx?.state==='running')void audioCtx.suspend();}else if(state&&!musicOff){startMusic();}});

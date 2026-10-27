@@ -85,6 +85,7 @@ async def run():
             assert not await m.evaluate('document.documentElement.scrollWidth>innerWidth'),f'{w} menu overflow'
             await m.locator('[data-action=cathedral-start]').tap()
             assert '驚嘆號' in await m.locator('.coach').inner_text(),'first-time coach should mention the exclamation mark'
+            await m.wait_for_selector('.cutscene--chapter',state='detached'); await m.wait_for_timeout(600)  # v4.6 title card
             boxes=[await b.bounding_box() for b in await m.locator('[data-action=mark]').all()]
             assert all(b['height']>=44 and b['x']>=0 and b['x']+b['width']<=w for b in boxes),boxes
             level=CATH[await m.locator('.stage-title').inner_text()]

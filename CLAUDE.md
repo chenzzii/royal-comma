@@ -18,7 +18,7 @@
 ## Tooling and location
 - Node.js >=18，原始碼是 **原生 ESM JavaScript**、HTML、CSS；不需要 npm install。
 - `npm test` 執行 Node 內建測試；`npm run build` 生成 `dist/index.html` 及根目錄單檔 HTML；`npm run dev` 啟動本機 HTTP server。
-- `python scripts/browser-verify-v4.py`、`browser-verify-v41.py`、`browser-verify-v42.py`、`browser-verify-v43.py` 是可選的 Playwright 瀏覽器驗證；預設用 Playwright 內建 Chromium，可用環境變數 `CHROMIUM_PATH` 指定其他瀏覽器。
+- `python scripts/browser-verify-v4.py`、`browser-verify-v41.py`、`browser-verify-v42.py`、`browser-verify-v43.py`、`browser-verify-v46.py`（過場動畫）是可選的 Playwright 瀏覽器驗證；預設用 Playwright 內建 Chromium，可用環境變數 `CHROMIUM_PATH` 指定其他瀏覽器。
 - 核心：`src/engine.mjs`；世界狀態與因果鏈：`src/world.mjs`（第一章）、`src/guild.mjs`（第二章）、`src/cathedral.mjs`（第三章）；敘事：`src/epilogue.mjs`；介面／音訊：`src/app.mjs`；樣式：`src/styles.css`；關卡：`content/levels.json`。
 - `src/shell.html` + `scripts/build.mjs` 內嵌 CSS/JS/MP3；請編修來源，不要直接編修建置產物。
 
