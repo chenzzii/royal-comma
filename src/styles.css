@@ -208,3 +208,10 @@
   .stamp-cta:disabled{position:static;margin:16px 0 4px;width:100%;box-shadow:none}
 }
 @media (max-width:590px){.parchment .royal-insignia{display:none}}
+
+/* v4.3: chapter 3 — cathedral palette. */
+.chapter-cathedral .parchment{background:linear-gradient(100deg,rgba(90,70,120,.14) 0%,transparent 8%,transparent 93%,rgba(70,50,100,.10) 100%),linear-gradient(160deg,#f3ecf6,#e2d6e8 100%);border-color:#8a74a0}
+.chapter-cathedral .stamp-cta:not(:disabled){background:linear-gradient(180deg,#7a4fa0 0%,#4f2d72 100%);border-color:#3c2058;box-shadow:0 6px 0 #2e1745,0 14px 26px rgba(46,23,69,.35)}
+.chapter-cathedral .stamp-cta--ready::after{border-color:rgba(122,79,160,.55)}
+.mark-picker{flex-wrap:wrap}
+@media (max-width:590px){.mark-option{padding:6px 12px;gap:6px}.mark-option b{font-size:22px}}

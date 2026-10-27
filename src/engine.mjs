@@ -10,8 +10,8 @@ const DEFAULT_RULES = Object.freeze({
   pointsRisky: 180, pointsCautious: 65, endBonusPerSafety: 35,
   endBonusPerCorrectDecree: 10,
 });
-const COMMA = '，', QUESTION = '？';
-const ALLOWED_MARKS = Object.freeze([COMMA, QUESTION]);
+const COMMA = '，', QUESTION = '？', EXCLAIM = '！';
+const ALLOWED_MARKS = Object.freeze([COMMA, QUESTION, EXCLAIM]);
 function insertMark(raw, position, mark = COMMA) {
   const chars=Array.from(raw);
   if(!Number.isInteger(position)||position<0||position>chars.length)throw new RangeError('Invalid comma position');
@@ -134,4 +134,4 @@ function canSurviveAll(data){
   for(const l of data.levels){chaos=Math.max(0,chaos+Math.min(...l.choices.map(c=>c.chaosDelta)));if(chaos>=limits.chaosLoseAt)return false;}
   return true;
 }
-export {COMMA,QUESTION,insertComma,insertMark,marksOf,placementsOf,validateGameData,hashSeed,createRng,generateOrder,newGame,getCurrentLevel,getCurrentChoice,selectPosition,selectMark,selectChoice,judgeChoice,advanceGame,canSurviveAll};
+export {COMMA,QUESTION,EXCLAIM,insertComma,insertMark,marksOf,placementsOf,validateGameData,hashSeed,createRng,generateOrder,newGame,getCurrentLevel,getCurrentChoice,selectPosition,selectMark,selectChoice,judgeChoice,advanceGame,canSurviveAll};

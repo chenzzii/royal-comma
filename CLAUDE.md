@@ -12,14 +12,14 @@
 - 結局要參照當局所有有效選擇、選擇發生順序、跨關連鎖與退件歷史；避免互相矛盾的敘事。不要宣稱 256 篇結局是獨立寫作：v4.1 起是 16 個分支片段＋`src/world.mjs` 的 35 條有先後條件的因果鏈組合而成。
 - v4.1 起，先前的命令會在後續關卡的「宮廷速報」與判決畫面的「連鎖反應」中出現；**只改劇情、不改數值**（見 `docs/DECISIONS.md`）。速報只能寫已發生的事，不得洩漏本關解讀。
 - 新增或改寫聖旨時，有效位置不可再形成固定規律（見 `tests/world.test.mjs` 的多樣性測試）。
-- 第二章「金幣商會」（`content/guild.json`、`src/guild.mjs`）：6 份合約，每章各自計分、混亂從 0 開始，跨章只延續劇情（`prelude`）。第三章「大教廷」尚未製作。
+- 第二章「金幣商會」（`content/guild.json`、`src/guild.mjs`）：6 份合約，每章各自計分、混亂從 0 開始，跨章只延續劇情（`prelude`）。第三章「大教廷」（`content/cathedral.json`、`src/cathedral.mjs`）：6 份公告，可選「，？！」其中一種；前情可同時包含第一、二章。
 - 保留單一可離線開啟的 HTML 發行形式。可以改進原始碼組織，但不得破壞既有單檔建置。
 
 ## Tooling and location
 - Node.js >=18，原始碼是 **原生 ESM JavaScript**、HTML、CSS；不需要 npm install。
 - `npm test` 執行 Node 內建測試；`npm run build` 生成 `dist/index.html` 及根目錄單檔 HTML；`npm run dev` 啟動本機 HTTP server。
-- `python scripts/browser-verify-v4.py`、`browser-verify-v41.py`、`browser-verify-v42.py` 是可選的 Playwright 瀏覽器驗證；預設用 Playwright 內建 Chromium，可用環境變數 `CHROMIUM_PATH` 指定其他瀏覽器。
-- 核心：`src/engine.mjs`；世界狀態與因果鏈：`src/world.mjs`（第一章）、`src/guild.mjs`（第二章）；敘事：`src/epilogue.mjs`；介面／音訊：`src/app.mjs`；樣式：`src/styles.css`；關卡：`content/levels.json`。
+- `python scripts/browser-verify-v4.py`、`browser-verify-v41.py`、`browser-verify-v42.py`、`browser-verify-v43.py` 是可選的 Playwright 瀏覽器驗證；預設用 Playwright 內建 Chromium，可用環境變數 `CHROMIUM_PATH` 指定其他瀏覽器。
+- 核心：`src/engine.mjs`；世界狀態與因果鏈：`src/world.mjs`（第一章）、`src/guild.mjs`（第二章）、`src/cathedral.mjs`（第三章）；敘事：`src/epilogue.mjs`；介面／音訊：`src/app.mjs`；樣式：`src/styles.css`；關卡：`content/levels.json`。
 - `src/shell.html` + `scripts/build.mjs` 內嵌 CSS/JS/MP3；請編修來源，不要直接編修建置產物。
 
 ## Workflow and truthfulness

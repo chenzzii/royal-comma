@@ -1,0 +1,57 @@
+{
+  "saga": {
+    "cathedral": [
+      {
+        "stage": "C04",
+        "choice": "A",
+        "chains": []
+      },
+      {
+        "stage": "C05",
+        "choice": "B",
+        "chains": []
+      },
+      {
+        "stage": "C06",
+        "choice": "A",
+        "chains": [
+          "熊公主扶起教宗"
+        ]
+      },
+      {
+        "stage": "C01",
+        "choice": "A",
+        "chains": [
+          "魔界還有位子"
+        ]
+      },
+      {
+        "stage": "C03",
+        "choice": "B",
+        "chains": [
+          "可以轉送的贖罪"
+        ]
+      },
+      {
+        "stage": "C02",
+        "choice": "B",
+        "chains": [
+          "誰會先跑"
+        ]
+      }
+    ]
+  },
+  "direct": {
+    "firstBriefing": "教廷快訊 · 前情\n\n皇家文書局把你借調到大教廷。教宗特地為你準備了三種符號：逗號、問號，還有驚嘆號。"
+  },
+  "schism": true,
+  "mobile": {
+    "320": {
+      "markButtons": 3
+    },
+    "390": {
+      "markButtons": 3
+    }
+  },
+  "pageErrors": []
+}

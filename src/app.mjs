@@ -3,10 +3,12 @@ import { insertMark, marksOf, validateGameData, newGame, getCurrentLevel, getCur
 import {makeChronicle} from './epilogue.mjs';
 import {ROYAL_WORLD, courtBriefing, latestReactions} from './world.mjs';
 import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
+import {CATHEDRAL_WORLD, makeCathedralChronicle} from './cathedral.mjs';
 
 (() => {
   validateGameData(GAME_DATA);
   validateGameData(GUILD_DATA);
+  validateGameData(CATHEDRAL_DATA);
   const root = document.querySelector('#app');
   const STORAGE_KEY = 'royal-comma:v4';
   const pref = (() => {
@@ -18,9 +20,10 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
   let musicOff = pref.musicOff === true; // Musical loop enabled by default
   let best = Number(pref.best || 0);
   let bestGuild = Number(pref.bestGuild || 0);
+  let bestCathedral = Number(pref.bestCathedral || 0);
   let demoPos = null;
   // First-time coaching (once per chapter, per browser).
-  let tutorial = {royal: pref.tutorialRoyal === true, guild: pref.tutorialGuild === true};
+  let tutorial = {royal: pref.tutorialRoyal === true, guild: pref.tutorialGuild === true, cathedral: pref.tutorialCathedral === true};
   let coachJudgment = false;
   let lastSeed = String(pref.lastSeed || 'ROYAL-001');
   let seedDraft = lastSeed;
@@ -35,7 +38,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
   const flourish = '<div class="flourish" aria-hidden="true"><span>✦</span><i></i><span>✧</span><i></i><span>✦</span></div>';
 
   function persist() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({best, bestGuild, lastSeed, mute, musicOff, musicVolume, tutorialRoyal: tutorial.royal, tutorialGuild: tutorial.guild})); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({best, bestGuild, lastSeed, mute, musicOff, musicVolume, tutorialRoyal: tutorial.royal, tutorialGuild: tutorial.guild, tutorialCathedral: tutorial.cathedral, bestCathedral})); } catch {}
   }
   function randomSeed() {
     if (globalThis.crypto?.getRandomValues) {
@@ -198,6 +201,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
     return `<header class="topbar"><button class="brand" data-action="home" title="返回首頁" aria-label="回到首頁">${crown}<span class="brand__copy"><strong>皇家文書局</strong><small>THE ROYAL SCRIBE</small></span></button><nav class="topbar__actions">${active?`<span class="seed-tag">種子 <b>${escapeHtml(state.seed)}</b></span>`:''}<button data-action="music" class="icon-button" title="${musicOff?'開啟':'關閉'}背景音樂" aria-label="${musicOff?'開啟':'關閉'}背景音樂">${musicOff?'♫̸':'♫'}</button><button data-action="sound" class="icon-button" title="${mute?'開啟':'關閉'}蓋章音效" aria-label="${mute?'開啟':'關閉'}音效">${mute?'🔇':'🔊'}</button><button data-action="help" class="small-button" aria-label="遊戲規則">規則 <span aria-hidden="true">?</span></button></nav></header>`;
   }
   const coin = `<svg class="crown-svg" viewBox="0 0 72 56" fill="none" aria-hidden="true"><ellipse cx="36" cy="30" rx="22" ry="22" fill="#EBC573" stroke="#8D5E27" stroke-width="2.5"/><ellipse cx="36" cy="30" rx="15" ry="15" fill="none" stroke="#B88A3E" stroke-width="2"/><path d="M33 21h6M31 27c0-3 10-3 10 0s-10 3-10 6 10 3 10 0M36 18v24" stroke="#8D5E27" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+  const keysIcon = `<svg class="crown-svg" viewBox="0 0 72 56" fill="none" aria-hidden="true"><path d="M36 4v10M31 9h10" stroke="#8D5E27" stroke-width="2.6" stroke-linecap="round"/><path d="M18 50V30c0-10 8-16 18-16s18 6 18 16v20Z" fill="#EBC573" stroke="#8D5E27" stroke-width="2.5"/><path d="M30 50V37a6 6 0 0 1 12 0v13" fill="#8a5a9c" stroke="#8D5E27" stroke-width="2"/><circle cx="36" cy="25" r="4" fill="#B3334B"/><path d="M12 50h48" stroke="#8D5E27" stroke-width="2.6" stroke-linecap="round"/></svg>`;
   /* Per-chapter wording. Chapter 1 values are the exact v4.1 strings. */
   const CHAPTERS = {
     royal:{data:GAME_DATA, world:ROYAL_WORLD, chronicle:makeChronicle, insignia:crown, ui:{
@@ -243,10 +247,31 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
       finaleWin:'尾聲：公證處照常上班', finaleLose:'尾聲：商會雖倒，帳本猶在', copyBtn:'複製我的商會年報',
       archiveH:'商會公證檔案', archiveP:'以下保存你實際蓋過章的每一份合約，包含退件。', fileStem:'商會年報', copied:'已複製商會年報'}},
   };
+  CHAPTERS.cathedral = {data:CATHEDRAL_DATA, world:CATHEDRAL_WORLD, chronicle:makeCathedralChronicle, insignia:keysIcon, ui:{
+      hud:'教廷目前狀態', doc:'目前公告', risky:'高風險標點', chaos:'信仰動搖', chaosWord:'動搖', score:'荒謬功德',
+      tag:n=>`第 ${n} 號公告`, date:n=>`教廷曆 ${n} 日 · 密封`, kicker:'HOLY SEE NOTICE', caption:'教宗口述、尚未標點的公告原文',
+      instruction:'先選<b>逗號、問號或驚嘆號</b>，再點任意字間、句首或句尾。每份公告只能放<b>一個</b>符號，有效擺法不會事先標示。',
+      previewEmpty:'尚未落筆：先選符號，再點任意字間的「·」。', clear:'移除符號', footerL:'一份公告 · 一個符號 · 蓋章即生效', footerR:'大教廷第 Ⅲ 號諭令',
+      missionP:'教宗沒有交代語氣。你不知道他是在宣布、反問，還是在大喊。', missionCard:'一個驚嘆號，可能讓全城衝去救火，也可能讓教宗提前退位。',
+      riskSmall:n=>`符號任意放，但不是每種擺法都能成為公告。無效擺法使教務停擺、動搖 +${n}，且必須重寫同一份。`,
+      stamp:'蓋上教廷封印', stampEmpty:'請先放好符號', asideTitle:'大教廷公告欄',
+      asideP:'<strong>信仰動搖達 7，教會立刻分裂。</strong>六份公告全部蓋章，才有年終功德。',
+      keys:'鍵盤：<kbd>1</kbd> 逗號 · <kbd>2</kbd> 問號 · <kbd>3</kbd> 驚嘆號 · <kbd>←</kbd> <kbd>→</kbd> 移動 · <kbd>Enter</kbd> 蓋章',
+      briefing:'教廷快訊 · 前情', chain:'◆ 連鎖反應 · 先前的決定找上門了',
+      invalidTitle:'樞機團看不懂這份公告', invalidSummary:'這個擺法無法形成可執行的公告。動搖增加，請重寫同一份。', safeTitle:'這次教廷還算幸運',
+      meaning:'教廷認證的正式解讀', invalidMeaning:'樞機團退件理由', news:'教廷快報', kickerJ:'HOLY SEE JUDGMENT',
+      winNotice:'六份公告全部發布。功德將依剩餘信仰計算。', loseNotice:'信仰動搖達到 7 點！樞機團決裂，教會正式分裂。',
+      btnWin:'檢視年度荒謬功德', btnLose:'前往教廷結局', btnRetry:'重寫本份公告（劇情未前進）', btnNext:n=>`領取下一份公告（第 ${n} 份）`,
+      endEyebrow:'FINAL HOLY AUDIT', winH:'你讓教廷撐過了一年。', loseH:'你讓教會分裂了。',
+      winP:'六份公告全部發布，教會尚未分裂。下面是依照你的標點寫成的教廷年鑑。', loseP:'信仰動搖達到 7 點。史官把你發布的每一份公告編成了一部分裂史。',
+      bonusWin:(b,x)=>`冒險與保守標點 ${b} ＋ 教會存續功德 ${x}`, bonusLose:(n,i)=>`已發布 ${n} 份公告、退件 ${i} 次。教會分裂不計功德。`,
+      newBtn:'換一座教廷', bookEyebrow:'YOUR HOLY SEE ANNALS', bookSmall:'此篇教廷年鑑由你實際蓋章的公告生成', links:'教廷人物的連鎖報應',
+      finaleWin:'尾聲：告解室照常開放', finaleLose:'尾聲：教會雖裂，公告猶在', copyBtn:'複製我的教廷年鑑',
+      archiveH:'教廷封印檔案', archiveP:'以下保存你實際蓋過封印的每一份公告，包含退件。', fileStem:'教廷年鑑', copied:'已複製教廷年鑑'}};
   const CH = () => CHAPTERS[state?.chapter ?? 'royal'];
   const DATA = () => CH().data;
   const U = () => CH().ui;
-  const MARK_NAMES = {'，':'逗號','？':'問號'};
+  const MARK_NAMES = {'，':'逗號','？':'問號','！':'驚嘆號'};
   /* Menu: teach the one mechanic on the first screen with a sentence that is NOT in the game. */
   const DEMO={raw:'貓不抓老鼠抓狗',readings:{3:'貓不出手，結果老鼠跑去抓狗。',5:'貓放過老鼠，改去抓狗。'}};
   function demoCard() {
@@ -265,7 +290,8 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
       <div class="menu-cta"><button class="btn btn--primary btn--huge" data-action="start">開始遊戲：第一章 <span>›</span></button><div class="menu-cta__seed"><label for="seed-input">王國代碼（選填，同代碼同關卡順序）</label><div class="seed-input-row"><input id="seed-input" class="seed-input" type="text" maxlength="42" value="${escapeHtml(seedDraft)}" autocomplete="off" spellcheck="false" aria-label="王國種子代碼"/><button class="btn btn--ghost btn--square" data-action="random-seed" title="產生新代碼" aria-label="產生隨機種子">↻</button></div></div></div>
     </div>
     <div class="menu-options"><div class="menu-options__main"><div class="section-eyebrow">THE STORY</div><h2>今日，就職。</h2><p class="story-lede story-lede--card">國王身體健康，卻預立了八份沒有標點的遺囑。依宮廷規定，遺囑必須「生前試行」，以免死後出錯。你是皇家文書局的書記官，負責替每一份遺囑補上一個逗號——沒有人告訴你哪種解讀才算正確。</p><div class="menu-quick"><button data-action="daily" class="text-button">◈ 今日王國挑戰</button><button data-action="help" class="text-button">完整規則</button></div>
-      <div class="chapter-entry"><span class="chapter-entry__tag">第二章 · 會長的合約少了一個符號</span><p>書記官被借調到金幣商會。這一章每份合約可以選擇放<b>逗號</b>或<b>問號</b>，但只能放一個。通關第一章後可帶著前情接續；也可以直接開始。</p><button class="btn btn--ghost" data-action="guild-start">直接開始第二章（無前情）›</button>${bestGuild?`<small>本機第二章最高業績 ${bestGuild.toLocaleString('zh-TW')} 分</small>`:''}</div></div>
+      <div class="chapter-entry"><span class="chapter-entry__tag">第二章 · 會長的合約少了一個符號</span><p>書記官被借調到金幣商會。這一章每份合約可以選擇放<b>逗號</b>或<b>問號</b>，但只能放一個。通關第一章後可帶著前情接續；也可以直接開始。</p><button class="btn btn--ghost" data-action="guild-start">直接開始第二章（無前情）›</button>${bestGuild?`<small>本機第二章最高業績 ${bestGuild.toLocaleString('zh-TW')} 分</small>`:''}</div>
+      <div class="chapter-entry"><span class="chapter-entry__tag">第三章 · 教宗的公告少了一個語氣</span><p>書記官被借調到大教廷。這一章可以選<b>逗號、問號或驚嘆號</b>，但只能放一個。通關第二章後可帶著前兩章的前情接續；也可以直接開始。</p><button class="btn btn--ghost" data-action="cathedral-start">直接開始第三章（無前情）›</button>${bestCathedral?`<small>本機第三章最高功德 ${bestCathedral.toLocaleString('zh-TW')} 分</small>`:''}</div></div>
     <aside class="menu-options__aside"><div class="rule-label">皇家文書局招聘須知</div><div class="rule-item"><span class="rule-icon">，</span><div><strong>一關一個逗號</strong><p>不可更動聖旨上的任何字。</p></div></div><div class="rule-item"><span class="rule-icon">♜</span><div><strong>沒有委託，也沒有答案</strong><p>從語意猜哪種命令會更混亂，只有能執行的解讀才推進劇情。</p></div></div><div class="rule-item"><span class="rule-icon">⚖</span><div><strong>引發混亂才能刷高分</strong><p>較危險的解讀 +180 分；較安穩的 +65 分。錯誤標點混亂 +1 並退件。</p></div></div><div class="warning-strip"><strong>⚠ 國王生前最後的提醒</strong><p>王國混亂達 <b>7</b>，王國就會崩潰並立即結束遊戲。逗號放錯位置也會增加混亂；想得高分，得先讓王國活到第八關！</p></div><div class="personal-best">${best ? `<span>本機最高政績</span><b>${best.toLocaleString('zh-TW')} 分</b>` : '<span>本機尚無通關紀錄</span><b>等待第一位書記官</b>'}</div></aside></div></main>`;
   }
   function metric(label, value, sub, cls='') {return `<div class="metric ${cls}"><span>${label}</span><strong>${value}</strong><small>${sub}</small></div>`;}
@@ -305,7 +331,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
     if(!coaching())return '';
     const placed=state.selectedPosition!==null,guild=state.chapter==='guild';
     const text=!placed
-      ? (guild?'<b>第一步</b>先選「逗號」或「問號」，再點字與字之間的任一個「·」。':'<b>第一步</b>點字與字之間的任一個「·」，把逗號放下去。')
+      ? (state.chapter==='cathedral'?'<b>第一步</b>先選「逗號」「問號」或「驚嘆號」，再點字與字之間的任一個「·」。':guild?'<b>第一步</b>先選「逗號」或「問號」，再點字與字之間的任一個「·」。':'<b>第一步</b>點字與字之間的任一個「·」，把逗號放下去。')
       : '<b>第二步</b>按下「蓋章送出」——按鈕上會寫出你要送出的句子。不滿意可以先點別的位置。';
     return `<div class="coach ${placed?'coach--down':''}" role="note"><span class="coach__badge">第一次玩</span><p>${text}</p></div>`;
   }
@@ -327,20 +353,22 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
     return [story.title,story.opening,...story.acts.flatMap(a=>[a.title,a.text]),...story.connections.flatMap(c=>[c.title,c.text]),'尾聲',story.epilogue].join('\n\n');
   }
   function ending() {
-    const won=state.phase==='victory',u=U(),guild=state.chapter==='guild';
-    if(won&&!guild&&state.score>best){best=state.score;persist();}
-    if(won&&guild&&state.score>bestGuild){bestGuild=state.score;persist();}
+    const won=state.phase==='victory',u=U(),chapter=state.chapter,guild=chapter!=='royal';
+    if(won&&chapter==='royal'&&state.score>best){best=state.score;persist();}
+    if(won&&chapter==='guild'&&state.score>bestGuild){bestGuild=state.score;persist();}
+    if(won&&chapter==='cathedral'&&state.score>bestCathedral){bestCathedral=state.score;persist();}
     const chronicle=CH().chronicle(state);
     const history=state.history.map((e,i)=>`<li class="history-item"><span class="history-index">${String(i+1).padStart(2,'0')}</span><div><strong>${escapeHtml(e.stageTitle)}</strong><p>${escapeHtml(e.punctuated)}</p><small>${escapeHtml(e.consequence)}</small></div><div class="history-result">${!e.valid?pill('退件','bad'):e.riskier?pill('大亂','bad'):pill('求穩','good')}<small>${getRiskText(e.chaosDelta)}</small></div></li>`).join('');
     const base=state.score-state.finalBonus;
     const acts=chronicle.acts.map(a=>`<section class="chronicle-act"><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.text)}</p></section>`).join('');
     const bridges=chronicle.connections.map(c=>`<section class="chronicle-crossover"><span class="chronicle-crossover__label">◆　跨關劇情觸發</span><h3>${escapeHtml(c.title)}</h3><p>${escapeHtml(c.text)}</p></section>`).join('');
-    const nextChapter=!guild&&won?`<div class="chapter-next"><span class="chapter-entry__tag">第二章 · 會長的合約少了一個符號</span><p>你在王宮做過的決定，會跟著你一起進入金幣商會。這一章可以選擇放逗號或問號。</p><button class="btn btn--primary" data-action="guild-continue">帶著這一局前往第二章 ›</button></div>`:'';
+    const nextChapter=!won?'':chapter==='royal'?`<div class="chapter-next"><span class="chapter-entry__tag">第二章 · 會長的合約少了一個符號</span><p>你在王宮做過的決定，會跟著你一起進入金幣商會。這一章可以選擇放逗號或問號。</p><button class="btn btn--primary" data-action="guild-continue">帶著這一局前往第二章 ›</button></div>`
+      :chapter==='guild'?`<div class="chapter-next"><span class="chapter-entry__tag">第三章 · 教宗的公告少了一個語氣</span><p>你在${state.prelude.length?'王宮與商會':'商會'}做過的決定，會跟著你一起走進大教廷。這一章可以選逗號、問號或驚嘆號。</p><button class="btn btn--primary" data-action="cathedral-continue">帶著這一局前往第三章 ›</button></div>`:'';
     return `<main class="ending-page"><section class="ending-hero ${won?'ending-hero--win':'ending-hero--lose'}"><div class="hero-crown">${CH().insignia}</div><div class="eyebrow">${u.endEyebrow}</div><h1>${won?u.winH:u.loseH}</h1><p>${won?u.winP:u.loseP}</p><div class="final-score"><span>${u.score}</span><strong>${state.score.toLocaleString('zh-TW')}</strong><small>分</small></div>${won?`<div class="bonus-breakdown">${u.bonusWin(base,state.finalBonus)}</div>`:`<div class="bonus-breakdown">${u.bonusLose(state.history.filter(e=>e.valid).length,state.invalidAttempts)}</div>`}<div class="end-badges">${pill(`大混亂 ${state.riskyCount} 次`)}${pill(`安穩解讀 ${state.cautiousCount} 次`,'good')}${pill(`${u.chaosWord} ${state.chaos}/7`,state.chaos>=7?'bad':'neutral')}${pill(`退件 ${state.invalidAttempts} 次`)}</div>${nextChapter}<div class="end-actions"><button class="btn btn--primary" data-action="retry">同一局再挑戰</button><button class="btn btn--ghost" data-action="new">${u.newBtn}</button>${guild?'<button class="btn btn--ghost" data-action="home">回到主選單</button>':''}</div><div class="seed-footer">本局代碼：${escapeHtml(state.seed)}　<button class="inline-link" data-action="copy-seed">複製代碼</button></div></section><article class="chronicle-book"><div class="section-eyebrow">${u.bookEyebrow}</div><div class="chronicle-heading"><span class="chronicle-seal">✒</span><div><h2>${escapeHtml(chronicle.title)}</h2><small>${u.bookSmall}</small></div></div><p class="chronicle-intro">${escapeHtml(chronicle.opening)}</p>${acts}${bridges?`<div class="chronicle-links"><h3>${u.links}</h3>${bridges}</div>`:''}<div class="chronicle-finale"><strong>${won?u.finaleWin:u.finaleLose}</strong><p>${escapeHtml(chronicle.epilogue)}</p></div><div class="chronicle-actions"><button class="btn btn--ghost" data-action="copy-chronicle">${u.copyBtn}</button><button class="btn btn--ghost" data-action="download-chronicle">下載故事 TXT</button><span>每一條命令都會改寫這部正史</span></div></article><section class="history-card"><div class="section-eyebrow">THE ARCHIVES</div><h2>${u.archiveH}</h2><p>${u.archiveP}</p><details class="history-details"><summary>展開逐關紀錄（${state.history.length} 筆）</summary><ol class="history-list">${history}</ol></details></section></main>`;
   }
   function help() {
     if(!helpOpen)return '';
-    return `<div class="modal-backdrop" data-action="close-help" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title"><button class="modal-close" aria-label="關閉遊戲規則" data-action="close-help">×</button><span class="section-eyebrow">EMPLOYEE HANDBOOK</span><h2 id="help-title">皇家文書局員工守則 v4.2</h2><ol><li>八份聖旨都少了一個逗號。可以把全形逗號放在<b>任何兩字之間、句首或句尾</b>，不會標示正確位置。</li><li><b>沒有本回合委託。</b>你的挑戰是從兩種可能的解讀，推測哪一種會讓王國更混亂，獲得更多荒謬政績分數。</li><li>每份聖旨只有兩個事先撰寫的可執行解讀；其他位置一律造成<b>施政癱瘓</b>：混亂 +1、退件重寫、本關不前進，也不能得分。</li><li>合法解讀中<b>相對較混亂者 +180 分</b>，相對較安穩者<b> +65 分</b>。你只會在蓋章後看到結果與爆笑宮廷快報。</li><li>真正的混亂變化依劇情決定，可能上升、保持或下降；高分不代表安全。<b>混亂達到 7 點，王國立刻崩潰。</b></li><li>王國會記得你做過的事：先前執行的命令會出現在下一份聖旨的<b>宮廷速報</b>，也可能在蓋章後引發<b>連鎖反應</b>。速報只報導已發生的事，不會透露逗號位置。</li><li>順利完成八份聖旨就勝利，依剩餘王國穩定度加發年終獎金。相同的王國種子有相同關卡順序。</li><li><b>第二章（金幣商會）：</b>六份合約，每份可以選擇放<b>逗號</b>或<b>問號</b>，但只能放一個符號；可執行的解讀一樣只有兩種，其他擺法退件、崩壞 +1。信用崩壞達 7 商會破產。從第一章通關接續時，你在王宮的決定會影響商會劇情。</li><li>背景音樂是約 66 秒、32 小節的原創滑稽宮廷小曲，採用笛聲、彈撥和笨重低音；不是參考歌曲的旋律重現；音樂和蓋章音效可分別開關。</li></ol><div class="sound-settings"><label for="music-volume">背景音樂音量 <output id="music-volume-value">${Math.round(musicVolume*100)}%</output></label><input id="music-volume" type="range" min="0" max="100" step="5" value="${Math.round(musicVolume*100)}" aria-label="背景音樂音量"/><small>音樂與蓋章音效也可以用右上角按鈕分別開關。</small></div><div class="help-keys"><kbd>←</kbd> / <kbd>→</kbd> 移動逗號　<kbd>1</kbd> / <kbd>2</kbd> 第二章切換逗號／問號　<kbd>Enter</kbd> 提交／下一關　<kbd>Esc</kbd> 說明</div><button class="btn btn--primary btn--wide" data-action="close-help">知道了，讓國家安全地混亂</button></section></div>`;
+    return `<div class="modal-backdrop" data-action="close-help" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title"><button class="modal-close" aria-label="關閉遊戲規則" data-action="close-help">×</button><span class="section-eyebrow">EMPLOYEE HANDBOOK</span><h2 id="help-title">皇家文書局員工守則 v4.3</h2><ol><li>八份聖旨都少了一個逗號。可以把全形逗號放在<b>任何兩字之間、句首或句尾</b>，不會標示正確位置。</li><li><b>沒有本回合委託。</b>你的挑戰是從兩種可能的解讀，推測哪一種會讓王國更混亂，獲得更多荒謬政績分數。</li><li>每份聖旨只有兩個事先撰寫的可執行解讀；其他位置一律造成<b>施政癱瘓</b>：混亂 +1、退件重寫、本關不前進，也不能得分。</li><li>合法解讀中<b>相對較混亂者 +180 分</b>，相對較安穩者<b> +65 分</b>。你只會在蓋章後看到結果與爆笑宮廷快報。</li><li>真正的混亂變化依劇情決定，可能上升、保持或下降；高分不代表安全。<b>混亂達到 7 點，王國立刻崩潰。</b></li><li>王國會記得你做過的事：先前執行的命令會出現在下一份聖旨的<b>宮廷速報</b>，也可能在蓋章後引發<b>連鎖反應</b>。速報只報導已發生的事，不會透露逗號位置。</li><li>順利完成八份聖旨就勝利，依剩餘王國穩定度加發年終獎金。相同的王國種子有相同關卡順序。</li><li><b>第三章（大教廷）：</b>六份公告，可選<b>逗號、問號或驚嘆號</b>，仍只能放一個；可執行的解讀只有兩種。信仰動搖達 7 教會分裂。從第二章通關接續時，前兩章的決定都會影響教廷劇情。</li><li><b>第二章（金幣商會）：</b>六份合約，每份可以選擇放<b>逗號</b>或<b>問號</b>，但只能放一個符號；可執行的解讀一樣只有兩種，其他擺法退件、崩壞 +1。信用崩壞達 7 商會破產。從第一章通關接續時，你在王宮的決定會影響商會劇情。</li><li>背景音樂是約 66 秒、32 小節的原創滑稽宮廷小曲，採用笛聲、彈撥和笨重低音；不是參考歌曲的旋律重現；音樂和蓋章音效可分別開關。</li></ol><div class="sound-settings"><label for="music-volume">背景音樂音量 <output id="music-volume-value">${Math.round(musicVolume*100)}%</output></label><input id="music-volume" type="range" min="0" max="100" step="5" value="${Math.round(musicVolume*100)}" aria-label="背景音樂音量"/><small>音樂與蓋章音效也可以用右上角按鈕分別開關。</small></div><div class="help-keys"><kbd>←</kbd> / <kbd>→</kbd> 移動逗號　<kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> 切換逗號／問號／驚嘆號　<kbd>Enter</kbd> 提交／下一關　<kbd>Esc</kbd> 說明</div><button class="btn btn--primary btn--wide" data-action="close-help">知道了，讓國家安全地混亂</button></section></div>`;
   }
   function focusDescriptor() {
     const el=document.activeElement;
@@ -360,7 +388,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
   function render(resetScroll=false) {
     const focus = resetScroll ? null : focusDescriptor();
     const key = state ? `${state.phase}-${state.round}` : 'menu';
-    root.innerHTML = `${topbar()}${state ? state.phase==='editing'?gameplay():state.phase==='judgment'?judgment():ending():menu()}<footer class="site-footer">© 皇家文書局　·　所有人物與政變均屬虛構　·　原創網頁遊戲 v4.2</footer>${help()}<div class="toast" role="status" aria-live="polite" id="toast"></div>`;
+    root.innerHTML = `${topbar()}${state ? state.phase==='editing'?gameplay():state.phase==='judgment'?judgment():ending():menu()}<footer class="site-footer">© 皇家文書局　·　所有人物與政變均屬虛構　·　原創網頁遊戲 v4.3</footer>${help()}<div class="toast" role="status" aria-live="polite" id="toast"></div>`;
     if (resetScroll || key !== stageViewKey) window.scrollTo({top:0,behavior:'instant'});
     stageViewKey = key;
     restoreFocus(focus);
@@ -409,6 +437,8 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
     if(action==='retry'){startGame(state.seed,state.chapter,state.prelude);return;}
     if(action==='guild-start'){startGame(root.querySelector('#seed-input')?.value||seedDraft,'guild',[]);return;}
     if(action==='guild-continue'&&state?.chapter==='royal'&&state.phase==='victory'){startGame(state.seed,'guild',state.history);return;}
+    if(action==='cathedral-start'){startGame(root.querySelector('#seed-input')?.value||seedDraft,'cathedral',[]);return;}
+    if(action==='cathedral-continue'&&state?.chapter==='guild'&&state.phase==='victory'){startGame(state.seed,'cathedral',[...state.prelude,...state.history]);return;}
     if((action==='copy-chronicle' || action==='download-chronicle') && state){
       const output=chronicleText(CH().chronicle(state));
       if(action==='download-chronicle'){
@@ -483,7 +513,7 @@ import {GUILD_WORLD, makeGuildChronicle} from './guild.mjs';
         const next=event.key==='Home'?0:event.key==='End'?max:state.selectedPosition===null?Math.floor(max/2):Math.max(0,Math.min(max,state.selectedPosition+step));
         state=selectPosition(state,DATA(),next);sound('choose');render();event.preventDefault();return;
       }
-      const markKey={'1':'，',',':'，','，':'，','2':'？','?':'？','？':'？','/':'？'}[event.key];
+      const markKey={'1':'，',',':'，','，':'，','2':'？','?':'？','？':'？','/':'？','3':'！','!':'！','！':'！'}[event.key];
       if(markKey&&multiMark()){state=selectMark(state,DATA(),markKey);sound('choose');render();event.preventDefault();return;}
       if(event.key==='Enter' && state.selectedPosition!==null){stampNow();event.preventDefault();}
     }else if(state.phase==='judgment' && event.key==='Enter'){

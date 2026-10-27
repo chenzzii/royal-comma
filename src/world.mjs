@@ -211,9 +211,17 @@ const ROYAL_WORLD = Object.freeze({initial:INITIAL_FACTS,effects:WORLD_EFFECTS,c
 function traceWorld(history,world=ROYAL_WORLD,prelude=[]){
   let facts=world.initial;const priorKeys=new Set();
   if(world!==ROYAL_WORLD){
-    const earlier=traceWorld(prelude);
-    facts={...earlier.facts,...world.initial};
-    for(const s of earlier.steps)priorKeys.add(s.key);
+    // Replay every earlier chapter in order (chapter 3 lists [ROYAL, GUILD]); each one only
+    // sees its own decisions, but inherits the facts of the chapters before it.
+    let carried={},earlier=[];
+    for(const w of world.previous??[ROYAL_WORLD]){
+      const mine=(prelude??[]).filter(h=>h?.valid&&w.effects[decisionKey(h)]);
+      const t=w===ROYAL_WORLD?traceWorld(mine):traceWorld(mine,w,earlier);
+      carried={...carried,...t.facts};
+      earlier=[...earlier,...mine];
+      for(const s of t.steps)priorKeys.add(s.key);
+    }
+    facts={...carried,...world.initial};
   }
   const steps=[];
   for(const entry of history??[]){
