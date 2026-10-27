@@ -7,7 +7,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 URL=(ROOT/'dist/index.html').as_uri()
 load=lambda f:{l['title']:l for l in json.loads((ROOT/'content'/f).read_text())['levels']}
 ROYAL,GUILD,CATH=load('levels.json'),load('guild.json'),load('cathedral.json')
-PICKS={'L01':'B','L05':'B','L04':'A','L07':'B','G02':'B','G06':'B','C06':'A','C03':'B'}
+PICKS={'L01':'B','L05':'B','L04':'A','L07':'B','G02':'B','G06':'B','C06':'A','C01':'B'}
 low=lambda l: min(l['choices'],key=lambda c:c['chaosDelta'])
 
 async def play(page,table,log=None):
@@ -46,7 +46,7 @@ async def run():
         await page.screenshot(path=str(ROOT/'docs/v43-cathedral-desktop.png'),full_page=True)
         log=[]; await play(page,CATH,log)
         chains=[c for e in log for c in e['chains']]
-        assert '熊公主扶起教宗' in chains and '可以轉送的贖罪' in chains,chains
+        assert '熊公主扶起教宗' in chains and '態度很差的分店' in chains,chains
         body=await page.locator('body').inner_text()
         assert '你讓教廷撐過了一年' in body and 'YOUR HOLY SEE ANNALS' in body
         story=await page.locator('.chronicle-book').inner_text()

@@ -17,8 +17,8 @@ const place=(g,pairs,data=cath)=>pairs.reduce((x,[m,p])=>togglePlacement(selectM
 const play=(g,pairs)=>judgeChoice(place(g,pairs),cath);
 const ORDERS=Array.from({length:30},(_,i)=>generateOrder(`C-${i}/cathedral`,cath));
 const combo=(bits,order)=>order.map(i=>`${cath.levels[i].id}:${cath.levels[i].choices[(bits>>i)&1].id}`);
-const PRELUDES=[[],['L01:B','L05:B','L04:A','L07:B'],['G02:B','G06:B','G01:B','G05:A'],
-  ['L01:B','L04:A','L05:B','L07:B','G01:B','G02:B','G05:A','G06:B'],['L01:A','L08:B','G03:B','G04:A']];
+const PRELUDES=[[],['L01:B','L05:B','L04:A','L07:B'],['G02:B','G01:B','G04:B','G03:A'],
+  ['L01:B','L04:A','L05:B','L07:B','G01:B','G02:B','G03:A','G04:B'],['L01:A','L08:B','G03:B','G04:A']];
 
 test('chapter 3 data: six notices, exactly three marks each, exclamation matters, survivable',()=>{
   assert.equal(validateGameData(cath),true);
@@ -32,17 +32,25 @@ test('chapter 3 data: six notices, exactly three marks each, exclamation matters
   // How many marks really decide between the readings (slot differs, or the accepted marks do not overlap).
   const deciding=l=>{const [a,b]=l.choices.map(c=>c.placements);return a.filter(p=>{const q=b.find(x=>x.at===p.at);return !q||!(p.accept??[p.mark]).some(m=>(q.accept??[q.mark]).includes(m));}).length;};
   assert.ok(cath.levels.every(l=>deciding(l)>=1));
-  assert.ok(cath.levels.some(l=>deciding(l)>=2),'at least one notice hinges on two marks at once');
+  // v4.5: at least three notices whose two readings share at most one slot (genuinely different segmentation).
+  const shared=l=>{const [a,b]=l.choices.map(c=>c.placements.map(p=>p.at));return a.filter(x=>b.includes(x)).length;};
+  assert.ok(cath.levels.filter(l=>shared(l)<=1).length>=3,cath.levels.map(l=>l.id+':'+shared(l)).join(' '));
+  assert.ok(cath.levels.some(l=>deciding(l)===3),'at least one notice where all three marks differ');
   for(const l of cath.levels)assert.ok(!royal.levels.some(r=>r.raw===l.raw)&&!guild.levels.some(g=>g.raw===l.raw));
 });
 
-test('three marks: ！ vs ， at the same slot decides; every alternative round-trips; earlier chapters unaffected',()=>{
-  const fire=at(newGame(cath,'FIRE'),'C02');
-  assert.equal(play(fire,[[COMMA,3],[COMMA,8],[QUESTION,14]]).history[0].choiceId,'A');
-  assert.equal(play(fire,[[COMMA,3],[EXCLAIM,8],[QUESTION,14]]).history[0].choiceId,'B');
-  assert.equal(play(fire,[[COMMA,3],[EXCLAIM,8],[EXCLAIM,14]]).history[0].valid,false);
-  const two=place(fire,[[COMMA,3],[COMMA,8]]);assert.equal(judgeChoice(two,cath),two,'needs all three');
-  const full=place(fire,[[COMMA,3],[COMMA,8],[QUESTION,14]]);assert.equal(togglePlacement(full,cath,1),full,'no fourth mark');
+test('three marks: every boundary matters; every alternative round-trips; earlier chapters unaffected',()=>{
+  const snow=at(newGame(cath,'SNOW'),'C01');
+  assert.equal(play(snow,[[COMMA,3],[COMMA,6],[QUESTION,10]]).history[0].choiceId,'A');
+  assert.equal(play(snow,[[COMMA,5],[COMMA,7],[EXCLAIM,10]]).history[0].choiceId,'B');
+  assert.equal(play(snow,[[COMMA,5],[EXCLAIM,7],[EXCLAIM,10]]).history[0].choiceId,'B','alias');
+  assert.equal(play(snow,[[COMMA,3],[COMMA,7],[EXCLAIM,10]]).history[0].valid,false,'mixing the two readings is rejected');
+  assert.equal(play(snow,[[COMMA,3],[COMMA,6],[EXCLAIM,10]]).history[0].valid,false,'right boundaries, wrong tone');
+  const two=place(snow,[[COMMA,3],[COMMA,6]]);assert.equal(judgeChoice(two,cath),two,'needs all three');
+  const full=place(snow,[[COMMA,3],[COMMA,6],[QUESTION,10]]);assert.equal(togglePlacement(full,cath,1),full,'no fourth mark');
+  const pope=at(newGame(cath,'POPE'),'C05');
+  assert.equal(play(pope,[[COMMA,3],[EXCLAIM,11],[QUESTION,18]]).history[0].choiceId,'A');
+  assert.equal(play(pope,[[COMMA,3],[QUESTION,11],[QUESTION,18]]).history[0].choiceId,'B');
   for(const l of cath.levels)for(const c of l.choices)for(const alt of readingAlternatives(c))for(const pick of [0,-1]){
     const pairs=alt.map(a=>[a.accept.at(pick),a.at]);
     assert.equal(play(at(newGame(cath,'RT'),l.id),pairs).history[0].choiceId,c.id,`${l.id} ${JSON.stringify(pairs)}`);
@@ -62,7 +70,7 @@ test('chapter 3 plays to victory and to schism',()=>{
 });
 
 test('chapter 3 chains react in both orders',()=>{
-  for(const [a,b] of [['C02:A','C04:B'],['C03:B','C01:B'],['C05:A','C06:A'],['C03:A','C04:A'],['C02:B','C05:B']]){
+  for(const [a,b] of [['C01:B','C02:B'],['C01:A','C03:A'],['C04:A','C06:B'],['C04:B','C05:B'],['C05:A','C06:A'],['C03:B','C05:B']]){
     const ab=fired([a,b]),ba=fired([b,a]);
     assert.ok(ab.length&&ba.length,`${a}/${b}`);assert.notDeepEqual(ab,ba);
   }
@@ -78,9 +86,9 @@ test('cross-chapter chains: chapter 1 and chapter 2 decisions both reach chapter
     assert.ok(!fired([...inside,c.on],[]).includes(c.id),`${c.id} without prelude`);
   }
   // Chapter 2 facts arrive in chapter 3 together with the chapter 1 facts that shaped chapter 2.
-  const start=traceWorld([],CATHEDRAL_WORLD,hist(['L08:B','G03:B','G06:B']));
-  assert.equal(start.facts.princeBroke,true);assert.equal(start.facts.princeWorksAtGuild,true);assert.equal(start.facts.ironicSign,true);
-  assert.ok(['L08:B','G03:B','G06:B'].every(k=>start.priorKeys.has(k)));
+  const start=traceWorld([],CATHEDRAL_WORLD,hist(['L08:B','G03:A','G02:B']));
+  assert.equal(start.facts.princeBroke,true);assert.equal(start.facts.catPromoted,true);assert.equal(start.facts.rudeService,true);
+  assert.ok(['L08:B','G03:A','G02:B'].every(k=>start.priorKeys.has(k)));
 });
 
 test('exhaustive chapter 3 combos × orders × preludes: no repeats, causes always earlier',()=>{
@@ -121,12 +129,13 @@ test('chapter 3 briefings never leak the current notice readings',()=>{
 });
 
 test('chapter 3 chronicle: fired chains in order, prelude-aware opening, fatal notice named',()=>{
-  const game={phase:'victory',seed:'S',history:hist(['C05:A','C06:A','C03:B','C01:B']).concat(hist(['C02:A','C04:B'])),
-    prelude:hist(['L01:B','G02:B']),chaos:5,invalidAttempts:0,riskyCount:4};
+  const game={phase:'victory',seed:'S',history:hist(['C05:A','C06:A','C01:B','C02:B','C03:A','C04:B']),
+    prelude:hist(['L01:B','G02:B','G03:A']),chaos:5,invalidAttempts:0,riskyCount:4};
   const story=makeCathedralChronicle(game);
   assert.deepEqual(story.connections.map(c=>c.title),traceWorld(game.history,CATHEDRAL_WORLD,game.prelude).steps.flatMap(s=>s.reactions.map(r=>r.title)));
-  assert.ok(story.connections.some(c=>c.title==='熊公主扶起教宗')&&story.connections.some(c=>c.title==='可以轉送的贖罪'));
+  for(const t of ['熊公主扶起教宗','態度很差的分店','借調來的迎賓主任','小鎮人口翻倍'])assert.ok(story.connections.some(c=>c.title===t),t);
   assert.equal(story.title,'《跪完就退位》');assert.match(story.opening,/商會/);
-  const lost=makeCathedralChronicle({phase:'defeat',endingReason:'chaos',seed:'L',history:[{stageId:'C02',valid:false,choiceId:null,placements:[],punctuated:'修女說？聖殿著火了，沒有人知道吧？'}],prelude:[],chaos:7,invalidAttempts:7,riskyCount:0});
-  assert.match(lost.epilogue,/修女說？聖殿著火了，沒有人知道吧？/);assert.match(lost.title,/退件/);
+  const lost=makeCathedralChronicle({phase:'defeat',endingReason:'chaos',seed:'L',history:[{stageId:'C01',valid:false,choiceId:null,placements:[],punctuated:'大雪天留客天？留我不留！'}],prelude:[],chaos:7,invalidAttempts:7,riskyCount:0});
+  assert.match(lost.epilogue,/大雪天留客天？留我不留！/);assert.match(lost.title,/退件/);
 });
+

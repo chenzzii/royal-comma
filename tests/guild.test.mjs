@@ -18,39 +18,37 @@ const ORDERS=Array.from({length:30},(_,i)=>generateOrder(`G-${i}/guild`,guild));
 const combo=(bits,order)=>order.map(i=>`${guild.levels[i].id}:${guild.levels[i].choices[(bits>>i)&1].id}`);
 const PRELUDES=[[],['L08:B','L04:B','L07:B'],['L01:B','L05:A','L04:A','L08:A'],['L01:A','L02:B','L03:B','L04:B','L05:A','L06:B','L07:B','L08:B']];
 
-test('chapter 2 data: six contracts, exactly two marks each, survivable, varied structures',()=>{
+test('chapter 2 data: six contracts, exactly two marks each, survivable, readings segment differently',()=>{
   assert.equal(validateGameData(guild),true);
   assert.equal(guild.levels.length,6);
   assert.equal(marksPerDoc(guild),2);
   assert.deepEqual(guild.marks,[COMMA,QUESTION]);
   assert.equal(canSurviveAll(guild),true);
   for(const l of guild.levels)for(const c of l.choices)for(const alt of readingAlternatives(c))assert.equal(alt.length,2,`${l.id}/${c.id}`);
-  // Readings differ by slot in some contracts and only by mark type in others.
-  const diffBySlot=guild.levels.filter(l=>{const [a,b]=l.choices.map(c=>c.placements.map(p=>p.at).join());return a!==b;});
-  assert.ok(diffBySlot.length>=2&&diffBySlot.length<=4,diffBySlot.map(l=>l.id));
-  // At least one contract needs BOTH marks to be different between the readings.
-  assert.ok(guild.levels.some(l=>{const [a,b]=l.choices;return a.placements.every((p,i)=>p.mark!==b.placements[i].mark);}));
+  // v4.5: the two readings never share both slots; several share none at all.
+  const shared=l=>{const [a,b]=l.choices.map(c=>c.placements.map(p=>p.at));return a.filter(x=>b.includes(x)).length;};
+  assert.ok(guild.levels.every(l=>shared(l)<=1),guild.levels.map(l=>l.id+':'+shared(l)).join(' '));
+  assert.ok(guild.levels.filter(l=>shared(l)===0).length>=2);
   const risky=new Set(guild.levels.map(l=>{const [a,b]=l.choices;return (a.chaosDelta>b.chaosDelta?a:b).rendered.includes(QUESTION);}));
   assert.equal(risky.size,2,'riskier reading sometimes has a question mark, sometimes not');
 });
 
-test('two marks: both must be right; same slots with a different mark is the other reading; aliases count',()=>{
-  const g=at(newGame(guild,'TWO'),'G05');
-  assert.equal(play(g,[[QUESTION,4],[COMMA,8]]).history[0].choiceId,'A');
-  assert.equal(play(g,[[COMMA,4],[QUESTION,8]]).history[0].choiceId,'B');
-  assert.equal(play(g,[[COMMA,4],[COMMA,8]]).history[0].choiceId,'A','alias');
-  assert.equal(play(g,[[QUESTION,4],[QUESTION,8]]).history[0].valid,false);
-  assert.equal(play(g,[[QUESTION,4],[COMMA,7]]).history[0].valid,false,'one wrong slot is enough to reject');
-  // One mark is not enough to stamp; a third mark cannot be added; clicking again removes.
-  const one=place(g,[[QUESTION,4]]);assert.equal(judgeChoice(one,guild),one);
-  const two=place(g,[[QUESTION,4],[COMMA,8]]);assert.equal(togglePlacement(two,guild,2),two);
+test('two marks: both must be right; a shifted boundary is the other reading; aliases count',()=>{
+  const g=at(newGame(guild,'TWO'),'G01');
+  assert.equal(play(g,[[COMMA,3],[COMMA,8]]).history[0].choiceId,'A');
+  assert.equal(play(g,[[COMMA,3],[QUESTION,8]]).history[0].choiceId,'A','alias');
+  assert.equal(play(g,[[COMMA,6],[COMMA,9]]).history[0].choiceId,'B');
+  assert.equal(play(g,[[COMMA,3],[COMMA,9]]).history[0].valid,false,'one wrong boundary is enough to reject');
+  assert.equal(play(g,[[COMMA,6],[COMMA,8]]).history[0].valid,false);
+  // One mark is not enough to stamp; a third mark cannot be added; clicking again removes or swaps.
+  const one=place(g,[[COMMA,3]]);assert.equal(judgeChoice(one,guild),one);
+  const two=place(g,[[COMMA,3],[COMMA,8]]);assert.equal(togglePlacement(two,guild,2),two);
   const removed=togglePlacement(selectMark(two,guild,COMMA),guild,8);assert.equal(removed.placements.length,1);
-  const swapped=togglePlacement(selectMark(two,guild,QUESTION),guild,8);assert.deepEqual(swapped.placements.map(p=>p.mark),[QUESTION,QUESTION]);
+  const swapped=togglePlacement(selectMark(two,guild,QUESTION),guild,8);assert.deepEqual(swapped.placements.map(p=>p.mark),[COMMA,QUESTION]);
   assert.equal(clearPlacements(two).placements.length,0);
-  const judged=play(g,[[COMMA,8],[QUESTION,4]]);
-  assert.equal(judged.history[0].punctuated,'股東分紅？沒有問題，會長說');
+  const judged=play(g,[[COMMA,9],[COMMA,6]]);
+  assert.equal(judged.history[0].punctuated,'會長說今年好，晦氣少，不得賠錢');
   assert.equal(advanceGame(judged).placements.length,0);
-  // Chapter 1 is unaffected: still a single comma.
   const r=newGame(royal,'ROYAL-ONLY');assert.equal(togglePlacement(r,royal,3),r);assert.equal(selectMark(r,royal,QUESTION),r);
 });
 
@@ -74,7 +72,7 @@ test('chapter 2 plays to victory and to bankruptcy; seed order differs from chap
 });
 
 test('guild chains react in both orders inside chapter 2',()=>{
-  const pairs=[['G02:B','G03:A'],['G06:B','G01:B'],['G04:A','G05:B'],['G05:A','G06:A'],['G03:B','G04:B']];
+  const pairs=[['G01:B','G02:B'],['G01:A','G04:B'],['G03:A','G05:A'],['G03:B','G05:B'],['G06:B','G05:A']];
   for(const [a,b] of pairs){
     const ab=fired([a,b]),ba=fired([b,a]);
     assert.ok(ab.length&&ba.length,`${a}/${b}`);
@@ -83,7 +81,6 @@ test('guild chains react in both orders inside chapter 2',()=>{
   for(const c of GUILD_CHAINS){
     assert.notEqual(c.judgment,c.chronicle);
     assert.ok(c.judgment.length>=30&&c.chronicle.length>40,c.id);
-    assert.ok(!fired([c.on,...c.after.filter(k=>k.startsWith('G'))]).includes(c.id)||c.after.every(k=>k.startsWith('L')),`${c.id} fired in reverse order`);
   }
 });
 
@@ -136,17 +133,18 @@ test('guild briefings never leak the current contract readings',()=>{
 });
 
 test('guild chronicle lists fired chains in order, carries the prelude, and names the fatal contract',()=>{
-  const keys=['G02:B','G03:A','G06:B','G01:B','G04:A','G05:B'];
-  const game={phase:'victory',seed:'S',history:hist(keys),prelude:hist(['L08:B','L04:B']),chaos:4,invalidAttempts:0,riskyCount:4};
+  const keys=['G06:B','G01:B','G02:B','G03:A','G05:A','G04:B'];
+  const game={phase:'victory',seed:'S',history:hist(keys),prelude:hist(['L04:B','L01:B','L07:B']),chaos:4,invalidAttempts:0,riskyCount:4};
   const story=makeGuildChronicle(game);
   const expected=traceWorld(game.history,GUILD_WORLD,game.prelude).steps.flatMap(s=>s.reactions.map(r=>r.title));
   assert.deepEqual(story.connections.map(c=>c.title),expected);
-  assert.ok(expected.includes('國王送來的中獎通知'));
+  assert.ok(expected.includes('國王送來的中獎通知')&&expected.includes('櫃台被搬到門外'));
   assert.equal(story.acts.length,2);
   assert.match(story.opening,/王宮/);
-  assert.equal(story.title,'《禮物經濟學》');
-  const lost=makeGuildChronicle({phase:'defeat',endingReason:'chaos',seed:'L',history:[...hist(['G02:B']),{stageId:'G06',valid:false,choiceId:null,mark:QUESTION,position:11,punctuated:'會長從不說謊全城都知道？'}],prelude:[],chaos:7,invalidAttempts:1,riskyCount:1});
-  assert.match(lost.epilogue,/會長從不說謊全城都知道？/);
+  assert.equal(story.title,'《一致地兇》');
+  const lost=makeGuildChronicle({phase:'defeat',endingReason:'chaos',seed:'L',history:[...hist(['G02:B']),{stageId:'G01',valid:false,choiceId:null,placements:[],punctuated:'會長說？今年好晦氣少不得賠錢？'}],prelude:[],chaos:7,invalidAttempts:1,riskyCount:1});
+  assert.match(lost.epilogue,/會長說？今年好晦氣少不得賠錢？/);
   assert.match(lost.epilogue,/1 份可執行合約/);
   assert.doesNotMatch(lost.opening,/王宮/);
 });
+

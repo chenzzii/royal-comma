@@ -7,7 +7,7 @@ URL=(ROOT/'dist/index.html').as_uri()
 ROYAL={l['title']:l for l in json.loads((ROOT/'content/levels.json').read_text())['levels']}
 GUILD={l['title']:l for l in json.loads((ROOT/'content/guild.json').read_text())['levels']}
 ROYAL_PICK={'L08':'B','L04':'B','L07':'B'}   # sets up cross-chapter facts: prince broke, king scammed, potion stock
-GUILD_PICK={'G02':'B','G03':'B'}             # 收禮合法 (國王的中獎通知)、會長催收 (一箱簽名照)
+GUILD_PICK={'G06':'B','G04':'B'}             # 收禮合法 (國王的中獎通知)、加倍分紅 (打嗝紀念品)
 low=lambda l: min(l['choices'],key=lambda c:c['chaosDelta'])
 
 def steps(choice):
@@ -50,7 +50,7 @@ async def run():
         assert '你讓王國勉強活下來' in await page.locator('body').inner_text()
         await page.click('[data-action=guild-continue]')
         first=await page.locator('.court-briefing').inner_text()
-        assert '王宮' in first and '問號' in first,first
+        assert '王宮' in first and '兩個符號' in first,first
         assert await page.locator('.mark-picker [data-action=mark]').count()==2
         await page.screenshot(path=str(ROOT/'docs/v42-guild-desktop.png'),full_page=True)
         guild_log=[]
@@ -64,7 +64,7 @@ async def run():
                 await page.screenshot(path=str(ROOT/'docs/v42-cross-chain-desktop.png'),full_page=True)
             await page.click('[data-action=advance]')
         all_chains=[c for e in guild_log for c in e['chains']]
-        assert '國王送來的中獎通知' in all_chains and '一箱簽名照' in all_chains,all_chains
+        assert '國王送來的中獎通知' in all_chains and '打嗝紀念品' in all_chains,all_chains
         body=await page.locator('body').inner_text()
         assert '你讓商會勉強撐過一年' in body and 'YOUR GUILD ANNUAL REPORT' in body
         story=await page.locator('.chronicle-book').inner_text()

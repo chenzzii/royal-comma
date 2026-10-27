@@ -3,13 +3,15 @@
     "cathedral": [
       {
         "stage": "C04",
-        "choice": "A",
+        "choice": "B",
         "chains": []
       },
       {
         "stage": "C05",
         "choice": "B",
-        "chains": []
+        "chains": [
+          "問號放錯了"
+        ]
       },
       {
         "stage": "C06",
@@ -20,29 +22,27 @@
       },
       {
         "stage": "C01",
-        "choice": "A",
+        "choice": "B",
         "chains": [
-          "魔界還有位子"
+          "態度很差的分店"
         ]
       },
       {
         "stage": "C03",
         "choice": "B",
         "chains": [
-          "可以轉送的贖罪"
+          "上山送行"
         ]
       },
       {
         "stage": "C02",
-        "choice": "B",
-        "chains": [
-          "誰會先跑"
-        ]
+        "choice": "A",
+        "chains": []
       }
     ]
   },
   "direct": {
-    "firstBriefing": "教廷快訊 · 前情\n\n皇家文書局把你借調到大教廷。教宗特地為你準備了三種符號：逗號、問號，還有驚嘆號。"
+    "firstBriefing": "教廷快訊 · 前情\n\n皇家文書局把你借調到大教廷。教廷的公告每份都要放三個符號：逗號、問號、驚嘆號可以混用。"
   },
   "schism": true,
   "mobile": {
