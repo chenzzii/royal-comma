@@ -6,7 +6,7 @@ const json = JSON.parse(read('content/levels.json'));
 const guild = JSON.parse(read('content/guild.json'));
 const cathedral = JSON.parse(read('content/cathedral.json'));
 // Modules are concatenated in dependency order into one classic script.
-const MODULES = ['src/engine.mjs', 'src/world.mjs', 'src/guild.mjs', 'src/cathedral.mjs', 'src/epilogue.mjs', 'src/app.mjs'];
+const MODULES = ['src/engine.mjs', 'src/world.mjs', 'src/guild.mjs', 'src/cathedral.mjs', 'src/epilogue.mjs', 'src/pixelart.mjs', 'src/app.mjs'];
 const IMPORT_RE = /^import\s*\{[^}]*\}\s*from\s*'\.\/[\w-]+\.mjs';\s*$/gm;
 const EXPORT_RE = /^export\s*\{[\s\S]*?\};\s*$/m;
 const parts = MODULES.map(file => {

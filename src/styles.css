@@ -259,3 +259,9 @@ main.scene-in--stamp{animation:scene-shake .45s ease both .2s}
 @keyframes cut-fall{from{transform:translateY(0) rotate(0);opacity:1}to{transform:translateY(110vh) rotate(var(--r));opacity:.85}}
 @keyframes cut-done{to{visibility:hidden}}
 @media (prefers-reduced-motion:reduce){.cutscene{display:none}main.scene-in,main.scene-in--stamp,.game-page.scene-in .parchment{animation:none}}
+
+/* v4.7: 8-bit outcome illustrations (chapter 1). */
+.scene-art{margin:0 0 14px;border:3px solid #2b1d1a;border-radius:6px;overflow:hidden;background:#2b1d1a;box-shadow:0 3px 0 rgba(43,29,26,.25);animation:scene-art-in .5s steps(5) both .25s}
+.scene-art svg{display:block;width:100%;height:auto;image-rendering:pixelated}
+@keyframes scene-art-in{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@media (prefers-reduced-motion:reduce){.scene-art{animation:none}}
